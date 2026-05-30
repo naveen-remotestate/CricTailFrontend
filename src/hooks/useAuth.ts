@@ -2,6 +2,7 @@ import { useMutation } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import { authService } from "@/services/api/authService";
 import type { User } from "@/types";
+import { formatPlayerName } from "@/lib/utils";
 
 // Helper to decode JWT without external library
 function decodeToken(token: string) {
@@ -43,7 +44,7 @@ export function useLogin() {
         // Fetch player details using the new token to get the full name
         const { apiClient } = await import("@/services/api/client");
         const playersResponse = await apiClient.get(`/players?search=${mobile_number}`, {
-          headers: { Authorization: `Bearer ${data.token}` }
+          headers: { token: data.token }
         });
         
         const players = playersResponse.data.players || [];
@@ -62,7 +63,7 @@ export function useLogin() {
       
       const user: User = {
         user_id: decoded?.user_id || "unknown",
-        full_name: data.full_name,
+        full_name: formatPlayerName(data.full_name),
         mobile_number: variables.mobile_number,
         is_active: true,
         created_at: new Date().toISOString(),

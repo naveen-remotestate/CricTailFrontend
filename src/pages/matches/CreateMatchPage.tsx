@@ -3,11 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useCreateMatch, useStartMatch } from "@/hooks/useMatches";
 import { useSearchPlayers, useCreatePlayer } from "@/hooks/usePlayers";
+import { useAuthStore } from "@/store/authStore";
 import { useMatchCreationStore } from "@/store/matchCreationStore";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
+import { formatPlayerName } from "@/lib/utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -24,7 +26,6 @@ import {
   Crown,
   Shield,
   GripVertical,
-  UserPlus,
   AlertCircle,
 } from "lucide-react";
 import type { User } from "@/types";
@@ -137,10 +138,11 @@ export default function CreateMatchPage() {
       store.addPlayer(user, team);
       const isSelected = store.selectedPlayers.some(p => p.user.user_id === user.user_id && p.team === team);
       const teamName = team === "A" ? store.teamAName : store.teamBName;
+      const formattedName = formatPlayerName(user.full_name);
       if (!isSelected) {
-        toast.success(`${user.full_name} removed from ${teamName}`);
+        toast.success(`${formattedName} removed from ${teamName}`);
       } else {
-        toast.success(`${user.full_name} added to ${teamName}`);
+        toast.success(`${formattedName} added to ${teamName}`);
       }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update player");
@@ -157,16 +159,25 @@ export default function CreateMatchPage() {
       return;
     }
     try {
-      const player = await createPlayer.mutateAsync({
+      const response = await createPlayer.mutateAsync({
         full_name: newPlayerName,
         mobile_number: newPlayerMobile,
       });
       
+      const newUser: User = {
+        user_id: response.user,
+        full_name: newPlayerName,
+        mobile_number: newPlayerMobile,
+        is_active: true,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+
       // Automatically add to team
-      store.addPlayer(player, team);
+      store.addPlayer(newUser, team);
       
       const teamName = team === "A" ? store.teamAName : store.teamBName;
-      toast.success(`${player.full_name} created and added to ${teamName}`);
+      toast.success(`${formatPlayerName(newPlayerName)} created and added to ${teamName}`);
       setNewPlayerName("");
       setNewPlayerMobile("");
       setShowAddPlayer(false);
@@ -191,29 +202,37 @@ export default function CreateMatchPage() {
 
     setIsStarting(true);
     try {
-      const tossWinnerTeamId =
-        store.tossWinner === "A" ? "team-a-new" : "team-b-new";
-
       const match = await createMatch.mutateAsync({
-        team_a_name: store.teamAName,
-        team_b_name: store.teamBName,
+        team_a: {
+          name: store.teamAName,
+          players: teamAPlayers.map(p => ({
+            user_id: p.user.user_id,
+            is_captain: p.isCaptain
+          }))
+        },
+        team_b: {
+          name: store.teamBName,
+          players: teamBPlayers.map(p => ({
+            user_id: p.user.user_id,
+            is_captain: p.isCaptain
+          }))
+        },
         overs: store.overs,
-        team_a_players: teamAPlayers,
-        team_b_players: teamBPlayers,
-        toss_winner_team_id: tossWinnerTeamId,
+        hosted_by: useAuthStore.getState().user?.user_id || "",
+        toss_winner_team: store.tossWinner || "A",
         toss_decision: store.tossDecision || "BAT",
+        striker_id: store.strikerId || "",
+        non_striker_id: store.nonStrikerId || "",
+        current_bowler_id: store.openingBowlerId || ""
       });
 
-      store.setMatchId(match.id);
-
-      // Start match with selected players
-      const startedMatch = await startMatch.mutateAsync(match.id);
+      store.setMatchId(match.match_id);
 
       toast.success("Match started! Good luck!");
 
       // Pass selected players info via state
       setTimeout(() => {
-        navigate(`/matches/${match.id}/score`, {
+        navigate(`/matches/${match.match_id}/score`, {
           state: {
             strikerId: store.strikerId,
             nonStrikerId: store.nonStrikerId,
@@ -439,11 +458,11 @@ export default function CreateMatchPage() {
                                 >
                                   <div className="flex items-center gap-2 flex-1 min-w-0">
                                     <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-[10px] font-black text-primary">
-                                      {player.full_name.charAt(0)}
+                                      {player.full_name.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="min-w-0">
                                       <p className="text-sm font-bold truncate">
-                                        {player.full_name}
+                                        {formatPlayerName(player.full_name)}
                                       </p>
                                       <p className="text-[10px] text-muted-foreground">
                                         {player.mobile_number}
@@ -643,12 +662,12 @@ export default function CreateMatchPage() {
                                   {idx + 1}
                                 </span>
                                 <div className="h-7 w-7 rounded-full bg-cricket-red/20 flex items-center justify-center text-xs font-bold text-cricket-red">
-                                  {player.user.full_name.charAt(0)}
+                                  {player.user.full_name.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5">
                                     <p className="text-sm font-medium truncate">
-                                      {player.user.full_name}
+                                      {formatPlayerName(player.user.full_name)}
                                     </p>
                                     {isCommon && (
                                       <span className="text-[8px] font-black uppercase tracking-tighter bg-cricket-red text-white px-1 rounded-sm shrink-0 whitespace-nowrap">
@@ -727,12 +746,12 @@ export default function CreateMatchPage() {
                                   {idx + 1}
                                 </span>
                                 <div className="h-7 w-7 rounded-full bg-cricket-blue/20 flex items-center justify-center text-xs font-bold text-cricket-blue">
-                                  {player.user.full_name.charAt(0)}
+                                  {player.user.full_name.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-1.5">
                                     <p className="text-sm font-medium truncate">
-                                      {player.user.full_name}
+                                      {formatPlayerName(player.user.full_name)}
                                     </p>
                                     {isCommon && (
                                       <span className="text-[8px] font-black uppercase tracking-tighter bg-cricket-blue text-white px-1 rounded-sm shrink-0 whitespace-nowrap">
@@ -1028,12 +1047,12 @@ export default function CreateMatchPage() {
                         >
                           <div className="flex items-center gap-2">
                             <div className={`h-8 w-8 rounded-full bg-${battingTeamColor}/20 flex items-center justify-center text-sm font-bold text-${battingTeamColor}`}>
-                              {player.user.full_name.charAt(0)}
+                              {player.user.full_name.charAt(0).toUpperCase()}
                             </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1">
                                   <p className="text-sm font-medium truncate">
-                                    {player.user.full_name}
+                                    {formatPlayerName(player.user.full_name)}
                                   </p>
                                   {player.user.user_id === commonPlayerId && (
                                     <span className="text-[7px] font-black uppercase tracking-tighter bg-primary text-white px-1 rounded-sm shrink-0 whitespace-nowrap">
@@ -1085,12 +1104,12 @@ export default function CreateMatchPage() {
                         >
                           <div className="flex items-center gap-2">
                             <div className={`h-8 w-8 rounded-full bg-${battingTeamColor}/20 flex items-center justify-center text-sm font-bold text-${battingTeamColor}`}>
-                              {player.user.full_name.charAt(0)}
+                              {player.user.full_name.charAt(0).toUpperCase()}
                             </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1">
                                   <p className="text-sm font-medium truncate">
-                                    {player.user.full_name}
+                                    {formatPlayerName(player.user.full_name)}
                                   </p>
                                   {player.user.user_id === commonPlayerId && (
                                     <span className="text-[7px] font-black uppercase tracking-tighter bg-primary text-white px-1 rounded-sm shrink-0 whitespace-nowrap">
@@ -1140,12 +1159,12 @@ export default function CreateMatchPage() {
                           >
                             <div className="flex items-center gap-2">
                               <div className={`h-8 w-8 rounded-full bg-${bowlingTeamColor}/20 flex items-center justify-center text-sm font-bold text-${bowlingTeamColor}`}>
-                                {player.user.full_name.charAt(0)}
+                                {player.user.full_name.charAt(0).toUpperCase()}
                               </div>
                               <div className="min-w-0">
                                 <div className="flex items-center gap-1">
                                   <p className="text-sm font-medium truncate">
-                                    {player.user.full_name}
+                                    {formatPlayerName(player.user.full_name)}
                                   </p>
                                   {isOccupied ? (
                                     <span className="text-[8px] font-black uppercase tracking-tighter bg-muted text-muted-foreground px-1 rounded-sm shrink-0">

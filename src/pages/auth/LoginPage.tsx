@@ -39,9 +39,10 @@ export default function LoginPage() {
     try {
       await login.mutateAsync(formData);
       toast.success("Login successful!");
-      navigate("/dashboard", { replace: true });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Login failed");
+      navigate("/", { replace: true });
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.message || "Login failed";
+      toast.error(message);
     }
   };
 

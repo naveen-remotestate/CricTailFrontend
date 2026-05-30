@@ -45,8 +45,9 @@ export default function RegisterPage() {
       });
       toast.success("Registration successful! Please login.");
       navigate("/login");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Registration failed");
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.message || "Registration failed";
+      toast.error(message);
     }
   };
 

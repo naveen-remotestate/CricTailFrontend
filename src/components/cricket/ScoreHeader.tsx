@@ -1,7 +1,8 @@
 import { motion } from "framer-motion";
 import type { Match, LiveMatchState } from "@/types";
-import { formatOvers, calculateRunRate, calculateRequiredRate } from "@/lib/utils";
+import { formatOvers, calculateRunRate, calculateRequiredRate, formatTeamName } from "@/lib/utils";
 import { Trophy, Info, Timer } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ScoreHeaderProps {
   match: Match;
@@ -10,8 +11,9 @@ interface ScoreHeaderProps {
 
 export function ScoreHeader({ match, liveState }: ScoreHeaderProps) {
   const isSecondInnings = match.current_innings_no === 2;
-  const firstInnings = match.innings?.[0];
-  const target = isSecondInnings ? (firstInnings?.total_runs || 0) + 1 : undefined;
+  
+  // Use backend properties directly
+  const target = isSecondInnings ? (match.previous_innings_score || 0) + 1 : undefined;
   
   const totalBalls = match.overs * 6;
   const legalBallsBowled = liveState.legal_balls || 0;
@@ -19,25 +21,57 @@ export function ScoreHeader({ match, liveState }: ScoreHeaderProps) {
   
   const requiredRate = target ? calculateRequiredRate(target, liveState.total_runs, ballsRemaining) : undefined;
   
-  const currentInnings = match.innings?.find((i) => !i.is_completed) || (isSecondInnings ? match.innings?.[1] : match.innings?.[0]);
-  const battingTeam = match.team_a?.id === currentInnings?.batting_team_id ? match.team_a : match.team_b;
-  const tossWinner = match.toss_winner_team_id === match.team_a?.id ? match.team_a?.name : match.team_b?.name;
+  const battingTeamId = match.batting_team_id;
+  const teamAName = match.team_a_name;
+  const teamBName = match.team_b_name;
+
+  const isTeamABatting = battingTeamId === match.team_a_id;
+
+  const battingTeamName = isTeamABatting ? teamAName : teamBName;
+
+  const tossWinnerName = match.toss_winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name;
+  const tossText = match.toss_winner_team_id 
+    ? `${tossWinnerName} WON TOSS & CHOSE TO ${match.toss_decision}`
+    : "TOSS NOT YET CONDUCTED";
 
   return (
     <div className="sticky top-16 z-40 w-full bg-background border-b shadow-sm">
       {/* Primary Score Bar */}
       <div className="bg-gradient-to-r from-[#1a1a2e] to-[#16213e] text-white px-4 py-3">
         <div className="mx-auto max-w-7xl flex items-center justify-between">
-          <div className="flex flex-col">
+          <div className="flex flex-col gap-1">
             <div className="flex items-center gap-2 mb-0.5">
               <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 rounded-sm">
                 INNINGS {match.current_innings_no}
               </span>
-              <div className="live-indicator relative h-1.5 w-1.5 rounded-full bg-red-500" />
+              <h2 className="text-sm font-bold tracking-tight uppercase truncate max-w-[150px]">
+                {formatTeamName(battingTeamName)}
+              </h2>
             </div>
-            <h2 className="text-sm font-bold tracking-tight uppercase truncate max-w-[120px]">
-              {battingTeam?.name}
-            </h2>
+            
+            <div className="flex items-center gap-2">
+              {/* Team A */}
+              <div className="flex flex-col">
+                <span className={cn(
+                  "text-xs font-black transition-all",
+                  isTeamABatting ? "text-lg text-white" : "text-[10px] text-white/40 uppercase"
+                )}>
+                  {formatTeamName(teamAName)}
+                </span>
+              </div>
+
+              <span className="text-[10px] font-black text-white/20">VS</span>
+
+              {/* Team B */}
+              <div className="flex flex-col">
+                <span className={cn(
+                  "text-xs font-black transition-all",
+                  !isTeamABatting ? "text-lg text-white" : "text-[10px] text-white/40 uppercase"
+                )}>
+                  {formatTeamName(teamBName)}
+                </span>
+              </div>
+            </div>
           </div>
 
           <div className="flex items-center gap-4">
@@ -84,7 +118,7 @@ export function ScoreHeader({ match, liveState }: ScoreHeaderProps) {
               <div className="flex items-center gap-3">
                 <div className="flex items-center gap-1 text-muted-foreground">
                   <Info className="h-3 w-3" />
-                  <span>{tossWinner} WON TOSS & {match.toss_decision === "BAT" ? "BAT" : "BOWL"}</span>
+                  <span>{tossText}</span>
                 </div>
               </div>
               <div className="flex items-center gap-3 text-muted-foreground">

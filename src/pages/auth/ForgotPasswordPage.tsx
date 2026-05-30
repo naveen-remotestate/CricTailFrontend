@@ -46,8 +46,9 @@ export default function ForgotPasswordPage() {
       });
       toast.success("Password reset successful!");
       setStep("success");
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Reset failed");
+    } catch (error: any) {
+      const message = error.response?.data?.error || error.message || "Reset failed";
+      toast.error(message);
     }
   };
 

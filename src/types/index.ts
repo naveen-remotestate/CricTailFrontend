@@ -28,31 +28,47 @@ export interface TeamPlayer {
 }
 
 export interface Match {
-  id: string;
+  match_id: string;
+  toss_winner_team_id: string | null;
+  winner_team_id: string | null;
+  toss_decision: string;
+  hosted_by: string;
+  current_innings_no: number;
+  overs: number;
+  start_time: string | null;
+  end_time: string | null;
   team_a_id: string;
+  team_a_name: string;
   team_b_id: string;
+  team_b_name: string;
+  current_total_runs: number;
+  current_total_wickets: number;
+  legal_balls: number;
+  previous_innings_score: number | null;
+  previous_innings_legal_balls: number | null;
+  current_inning_id: string;
+  is_completed: boolean;
+  batting_team_id: string;
+  bowling_team_id: string;
+  striker_id: string | null;
+  striker_name: string | null;
+  striker_runs: number;
+  striker_balls: number;
+  non_striker_id: string | null;
+  non_striker_name: string | null;
+  non_striker_runs: number;
+  non_striker_balls: number;
+  bowler_id: string | null;
+  bowler_name: string | null;
+  bowler_runs_given: number;
+  bowler_legal_balls: number;
+  bowler_wickets: number;
+  
+  // High-level relations
   team_a?: Team;
   team_b?: Team;
-  toss_winner_team_id?: string;
-  toss_decision?: "BAT" | "BOWL";
-  batting_first_team_id?: string;
-  winner_team_id?: string;
-  overs: number;
-  current_innings_no: number;
-  hosted_by: string;
-  scorer_1?: string;
-  scorer_2?: string;
-  stats_processed: boolean;
-  start_time?: string;
-  end_time?: string;
-  created_at: string;
-  updated_at: string;
-  status?: MatchStatus;
-  live_state?: LiveMatchState;
   innings?: Innings[];
 }
-
-export type MatchStatus = "UPCOMING" | "LIVE" | "COMPLETED" | "ABANDONED";
 
 export interface Innings {
   id: string;
@@ -69,13 +85,10 @@ export interface Innings {
   byes: number;
   leg_byes: number;
   is_completed: boolean;
-  start_time?: string;
-  end_time?: string;
   created_at: string;
   updated_at: string;
   batting_scorecards?: BattingScorecard[];
   bowling_scorecards?: BowlingScorecard[];
-  ball_events?: BallEvent[];
 }
 
 export interface LiveMatchState {
@@ -83,14 +96,14 @@ export interface LiveMatchState {
   innings_id?: string;
   striker_id?: string;
   non_striker_id?: string;
-  current_bowler_id?: string;
+  bowler_id?: string;
   total_runs: number;
   total_wickets: number;
   legal_balls: number;
   updated_at: string;
-  striker?: User;
-  non_striker?: User;
-  current_bowler?: User;
+  striker_name?: string;
+  non_striker_name?: string;
+  bowler_name?: string;
 }
 
 export interface BallEvent {
@@ -111,14 +124,7 @@ export interface BallEvent {
   is_boundary_six: boolean;
   is_dot_ball: boolean;
   is_wicket: boolean;
-  wicket_type?:
-    | "BOWLED"
-    | "CAUGHT"
-    | "LBW"
-    | "RUN_OUT"
-    | "STUMPED"
-    | "HIT_WICKET"
-    | "RETIRED_HURT";
+  wicket_type?: string;
   dismissed_player_id?: string;
   dismissed_by_fielder_id?: string;
   bowled_at: string;
@@ -128,24 +134,14 @@ export interface BattingScorecard {
   id: string;
   innings_id: string;
   user_id: string;
-  batting_position: number;
   runs: number;
   balls_faced: number;
   fours: number;
   sixes: number;
-  dismissal_type?:
-    | "BOWLED"
-    | "CAUGHT"
-    | "LBW"
-    | "RUN_OUT"
-    | "STUMPED"
-    | "HIT_WICKET"
-    | "RETIRED_HURT";
+  is_out: boolean;
+  dismissal_type?: string;
   dismissed_by_bowler_id?: string;
   fielder_id?: string;
-  is_out: boolean;
-  created_at: string;
-  updated_at: string;
   user?: User;
 }
 
@@ -159,21 +155,64 @@ export interface BowlingScorecard {
   wickets: number;
   wides: number;
   no_balls: number;
-  created_at: string;
-  updated_at: string;
   user?: User;
+}
+
+// New Scorecard API Types
+export interface BowlingScorecardResponse {
+  user_id: string;
+  player_name: string;
+  legal_balls: number;
+  runs_conceded: number;
+  wickets: number;
+  wides: number;
+  no_balls: number;
+}
+
+export interface BattingScorecardResponse {
+  user_id: string;
+  player_name: string;
+  runs: number;
+  balls_faced: number;
+  fours: number;
+  sixes: number;
+  is_out: boolean;
+  dismissal_type: string | null;
+}
+
+export interface InningsScorecard {
+  innings_id: string;
+  innings_no: number;
+  batting_team_id: string;
+  bowling_team_id: string;
+  total_runs: number;
+  total_wickets: number;
+  legal_balls: number;
+  extras: number;
+  batting: BattingScorecardResponse[];
+  bowling: BowlingScorecardResponse[];
+}
+
+export interface MatchScorecardResponse {
+  match_id: string;
+  first_innings?: InningsScorecard;
+  second_innings?: InningsScorecard;
 }
 
 export interface PlayerCareerStats {
   id: string;
   user_id: string;
   batting_style?: "LEFT" | "RIGHT";
-  bowling_style?: "FAST" | "MEDIUM" | "SPIN" | "OFF SPIN" | "LEG SPIN";
+  bowling_style?: string;
+  
   matches_played: number;
   innings_batted: number;
   innings_bowled: number;
   matches_won: number;
+  
   total_points: number;
+
+  // Batting
   total_runs: number;
   total_balls_faced: number;
   highest_run: number;
@@ -184,6 +223,8 @@ export interface PlayerCareerStats {
   golden_ducks: number;
   fifties: number;
   hundreds: number;
+
+  // Bowling
   total_balls_bowled: number;
   total_runs_conceded: number;
   total_wickets_taken: number;
@@ -191,58 +232,23 @@ export interface PlayerCareerStats {
   wides: number;
   no_balls: number;
   highest_wicket_taken: number;
+
+  // Fielding
   catches: number;
   run_outs: number;
   stumping: number;
-  updated_at: string;
-}
 
-export interface CreateMatchRequest {
-  team_a_name: string;
-  team_b_name: string;
-  overs: number;
+  updated_at: string;
 }
 
 export interface UpdateMatchRequest {
   toss_winner_team_id?: string;
   toss_decision?: "BAT" | "BOWL";
-  batting_first_team_id?: string;
   winner_team_id?: string;
-  current_innings_no?: number;
-  scorer_1?: string;
-  scorer_2?: string;
-  start_time?: string;
-  end_time?: string;
-}
-
-export interface ScoreBallRequest {
-  runs_off_bat: number;
-  extra_type?: "WIDE" | "NO_BALL" | "BYE" | "LEG_BYE";
-  extra_runs?: number;
-  is_wicket?: boolean;
-  wicket_type?: string;
-  dismissed_player_id?: string;
-  dismissed_by_fielder_id?: string;
-  new_batsman_id?: string;
-  new_bowler_id?: string;
-}
-
-export interface AuthState {
-  user: User | null;
-  token: string | null;
-  isAuthenticated: boolean;
 }
 
 export interface ApiResponse<T> {
   data: T;
   message?: string;
   success: boolean;
-}
-
-export interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  page: number;
-  limit: number;
-  total_pages: number;
 }

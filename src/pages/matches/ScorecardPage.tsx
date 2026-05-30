@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { useMatch } from "@/hooks/useMatches";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatOvers, calculateRunRate } from "@/lib/utils";
+import { formatOvers, calculateRunRate, formatPlayerName } from "@/lib/utils";
 import { Trophy } from "lucide-react";
 
 export default function ScorecardPage() {
@@ -35,12 +35,12 @@ export default function ScorecardPage() {
       >
         <h1 className="text-2xl font-bold mb-2">Full Scorecard</h1>
         <p className="text-muted-foreground">
-          {match.team_a?.name} vs {match.team_b?.name}
+          {match.team_a_name} vs {match.team_b_name}
         </p>
       </motion.div>
 
-      {match.innings?.map((innings, idx) => {
-        const battingTeam = match.team_a?.id === innings.batting_team_id ? match.team_a : match.team_b;
+      {match.innings?.map((innings: any, idx: number) => {
+        const battingTeamName = match.team_a_id === innings.batting_team_id ? match.team_a_name : match.team_b_name;
         return (
           <motion.div
             key={innings.id}
@@ -52,7 +52,7 @@ export default function ScorecardPage() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="font-semibold">{battingTeam?.name}</h2>
+                    <h2 className="font-semibold">{battingTeamName}</h2>
                     <p className="text-xs text-muted-foreground">Innings {innings.innings_no}</p>
                   </div>
                   <div className="text-right">
@@ -77,11 +77,11 @@ export default function ScorecardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {innings.batting_scorecards?.map((card) => (
+                      {innings.batting_scorecards?.map((card: any) => (
                         <tr key={card.id} className="border-b border-border/50">
                           <td className="py-2">
                             <span className={card.is_out ? "" : "font-semibold"}>
-                              {card.user?.full_name}
+                              {formatPlayerName(card.user?.full_name)}
                             </span>
                             {card.is_out && card.dismissal_type && (
                               <span className="block text-xs text-muted-foreground">
@@ -116,9 +116,9 @@ export default function ScorecardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {innings.bowling_scorecards?.map((card) => (
+                      {innings.bowling_scorecards?.map((card: any) => (
                         <tr key={card.id} className="border-b border-border/50">
-                          <td className="py-2">{card.user?.full_name}</td>
+                          <td className="py-2">{formatPlayerName(card.user?.full_name)}</td>
                           <td className="py-2 text-right">{formatOvers(card.legal_balls)}</td>
                           <td className="py-2 text-right">{card.maidens}</td>
                           <td className="py-2 text-right">{card.runs_conceded}</td>
@@ -146,7 +146,7 @@ export default function ScorecardPage() {
         <div className="flex items-center justify-center gap-2 text-cricket-gold py-4">
           <Trophy className="h-6 w-6" />
           <span className="text-lg font-semibold">
-            {match.winner_team_id === match.team_a_id ? match.team_a?.name : match.team_b?.name} won the match
+            {match.winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name} won the match
           </span>
         </div>
       )}

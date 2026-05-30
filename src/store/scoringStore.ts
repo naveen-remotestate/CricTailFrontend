@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import type { Match, Innings, LiveMatchState, BallEvent, User } from "@/types";
+import type { Match, Innings, LiveMatchState, BallEvent } from "@/types";
 
 interface ScoringStore {
   currentMatch: Match | null;
@@ -18,7 +18,7 @@ interface ScoringStore {
   reset: () => void;
 }
 
-export const useScoringStore = create<ScoringStore>((set, get) => ({
+export const useScoringStore = create<ScoringStore>((set) => ({
   currentMatch: null,
   currentInnings: null,
   liveState: null,

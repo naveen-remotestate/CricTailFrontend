@@ -1,20 +1,44 @@
 import { Link } from "react-router-dom";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 import { useMatches } from "@/hooks/useMatches";
 import { LiveMatchCard } from "@/components/cricket/LiveMatchCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuthStore } from "@/store/authStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Trophy, Zap, Users, ArrowRight, PlusCircle, Play } from "lucide-react";
+import { 
+  Trophy, 
+  Users, 
+  PlusCircle, 
+  Play, 
+  ChevronRight, 
+  FileText, 
+  Share2, 
+  ShieldCheck, 
+  Zap, 
+  X, 
+  Copy 
+} from "lucide-react";
+import { toast } from "sonner";
+import { formatOvers, formatTeamName } from "@/lib/utils";
 
 export default function HomePage() {
   const { data: matches, isLoading } = useMatches();
   const { isAuthenticated } = useAuthStore();
+  const [showAllLive, setShowAllLive] = useState(false);
+  const [showAllFinished, setShowAllFinished] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
 
-  const liveMatches = matches?.filter((m) => m.status === "LIVE") || [];
-  const upcomingMatches = matches?.filter((m) => m.status === "UPCOMING") || [];
-  const completedMatches = matches?.filter((m) => m.status === "COMPLETED") || [];
+  const liveMatches = matches?.filter((m: any) => !m.is_completed) || [];
+  const finishedMatches = matches?.filter((m: any) => m.is_completed) || [];
+
+  const handleCopyLink = (matchId: string) => {
+    const url = `${window.location.origin}/matches/${matchId}/live`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("Live link copied to clipboard!");
+    });
+  };
 
   return (
     <div className="min-h-screen bg-background flex flex-col pb-20">
@@ -81,110 +105,240 @@ export default function HomePage() {
 
       {/* Main Content Area */}
       <div className="flex-1 mx-auto w-full max-w-7xl px-4 space-y-8">
-        {/* Horizontal Featured Section */}
-        {liveMatches.length > 0 && (
-          <section className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-lg font-bold flex items-center gap-2">
-                <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                Live Now
-              </h2>
-              {liveMatches.length > 1 && (
-                <span className="text-xs text-muted-foreground">{liveMatches.length} matches</span>
-              )}
-            </div>
-            
-            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-hide -mx-4 px-4 snap-x">
-              {liveMatches.map((match) => (
-                <div key={match.id} className="min-w-[85vw] sm:min-w-[400px] snap-center">
-                  <LiveMatchCard match={match} featured />
-                </div>
-              ))}
-            </div>
-          </section>
-        )}
-
         {/* Tabbed Match Explorer */}
         <section className="space-y-4">
-          <Tabs defaultValue="upcoming" className="w-full">
+          <Tabs defaultValue="live" className="w-full">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-bold">Explore</h2>
-              <TabsList className="bg-muted/50 rounded-full p-1">
-                <TabsTrigger value="upcoming" className="rounded-full px-4 text-xs">Upcoming</TabsTrigger>
-                <TabsTrigger value="finished" className="rounded-full px-4 text-xs">Finished</TabsTrigger>
-              </TabsList>
+              <h2 className="text-lg font-bold uppercase tracking-tighter">Matches</h2>
+              <div className="flex items-center gap-4">
+                 <TabsList className="bg-muted/50 rounded-full p-1 border">
+                    <TabsTrigger value="live" className="rounded-full px-6 font-bold uppercase data-[state=active]:bg-background data-[state=active]:shadow-sm">Live</TabsTrigger>
+                    <TabsTrigger value="finished" className="rounded-full px-6 font-bold uppercase data-[state=active]:bg-background data-[state=active]:shadow-sm">Finished</TabsTrigger>
+                 </TabsList>
+              </div>
             </div>
 
-            <TabsContent value="upcoming" className="mt-0">
+            <TabsContent value="live" className="mt-0 outline-none">
               {isLoading ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+                  {[1, 2, 3].map((i: number) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
                 </div>
-              ) : upcomingMatches.length > 0 ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {upcomingMatches.map((match) => (
-                    <LiveMatchCard key={match.id} match={match} />
-                  ))}
+              ) : liveMatches.length > 0 ? (
+                <div className="space-y-6">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {(showAllLive ? liveMatches : liveMatches.slice(0, 3)).map((match: any) => (
+                      <LiveMatchCard key={match.match_id} match={match} />
+                    ))}
+                  </div>
+                  {liveMatches.length > 3 && !showAllLive && (
+                     <div className="flex justify-center">
+                        <Button 
+                          variant="outline" 
+                          className="rounded-full px-8 font-black uppercase tracking-tighter text-xs gap-2 group hover:border-primary/50 transition-all"
+                          onClick={() => setShowAllLive(true)}
+                        >
+                           Show All Live Matches
+                           <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                     </div>
+                  )}
                 </div>
               ) : (
-                <div className="text-center py-12 rounded-3xl border-2 border-dashed bg-muted/20">
-                  <Calendar className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-20" />
-                  <p className="text-sm text-muted-foreground">No upcoming matches</p>
+                <div className="text-center py-16 rounded-[2.5rem] border-2 border-dashed bg-muted/20">
+                  <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 opacity-50">
+                    <Play className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                  <h3 className="text-lg font-bold">No Live Matches</h3>
+                  <p className="text-sm text-muted-foreground mt-1 mb-6">Start a new match to see it here!</p>
+                  <Button variant="outline" className="rounded-full font-bold px-6" asChild>
+                    <Link to="/matches/create" className="gap-2">
+                      <PlusCircle className="h-4 w-4" /> CREATE MATCH
+                    </Link>
+                  </Button>
                 </div>
               )}
             </TabsContent>
 
-            <TabsContent value="finished" className="mt-0">
+            <TabsContent value="finished" className="mt-0 outline-none">
               {isLoading ? (
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {[1, 2, 3].map((i) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
+                  {[1, 2, 3].map((i: number) => <Skeleton key={i} className="h-32 rounded-2xl" />)}
                 </div>
-              ) : completedMatches.length > 0 ? (
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {completedMatches.map((match) => (
-                    <LiveMatchCard key={match.id} match={match} />
-                  ))}
+              ) : finishedMatches.length > 0 ? (
+                <div className="space-y-6">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {(showAllFinished ? finishedMatches : finishedMatches.slice(0, 3)).map((match: any) => (
+                      <LiveMatchCard key={match.match_id} match={match} />
+                    ))}
+                  </div>
+                  {finishedMatches.length > 3 && !showAllFinished && (
+                     <div className="flex justify-center">
+                        <Button 
+                          variant="outline" 
+                          className="rounded-full px-8 font-black uppercase tracking-tighter text-xs gap-2 group hover:border-primary/50 transition-all"
+                          onClick={() => setShowAllFinished(true)}
+                        >
+                           Show All Results
+                           <ChevronRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                        </Button>
+                     </div>
+                  )}
                 </div>
               ) : (
                 <div className="text-center py-12 rounded-3xl border-2 border-dashed bg-muted/20">
                   <Trophy className="h-10 w-10 text-muted-foreground mx-auto mb-2 opacity-20" />
-                  <p className="text-sm text-muted-foreground">No completed matches yet</p>
+                  <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">No match results found</p>
                 </div>
               )}
             </TabsContent>
           </Tabs>
         </section>
 
-        {/* Quick Insights Cards */}
-        <section className="grid grid-cols-2 gap-4">
-          <motion.div
-            whileHover={{ y: -5 }}
-            className="p-4 rounded-3xl bg-blue-500/10 border border-blue-500/20"
-          >
-            <div className="h-10 w-10 rounded-2xl bg-blue-500/20 flex items-center justify-center mb-3">
-              <Users className="h-5 w-5 text-blue-600" />
-            </div>
-            <p className="text-2xl font-black text-blue-900 dark:text-blue-100">{matches?.length || 0}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-blue-600">Active Players</p>
-          </motion.div>
+        {/* Quick Features Section */}
+        <section className="space-y-4">
+          <div className="flex items-center gap-2">
+            <Zap className="h-4 w-4 text-primary fill-current" />
+            <h2 className="text-lg font-bold uppercase tracking-tighter">Features</h2>
+          </div>
+          
+          <div className="grid gap-3 sm:grid-cols-2">
+            <Link to="/teams">
+              <motion.div
+                whileHover={{ x: 5 }}
+                className="group p-4 rounded-[2rem] bg-card border border-border shadow-sm flex items-center gap-4 transition-all hover:border-primary/30"
+              >
+                <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
+                  <Users className="h-6 w-6" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black uppercase tracking-tight">Squad Builder</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">Build and manage your team rosters.</p>
+                </div>
+              </motion.div>
+            </Link>
 
-          <motion.div
-            whileHover={{ y: -5 }}
-            className="p-4 rounded-3xl bg-primary/10 border border-primary/20"
-          >
-            <div className="h-10 w-10 rounded-2xl bg-primary/20 flex items-center justify-center mb-3">
-              <Play className="h-5 w-5 text-primary" />
+            <Link to="/profile">
+              <motion.div
+                whileHover={{ x: 5 }}
+                className="group p-4 rounded-[2rem] bg-card border border-border shadow-sm flex items-center gap-4 transition-all hover:border-blue-500/30"
+              >
+                <div className="h-12 w-12 rounded-2xl bg-blue-500/10 flex items-center justify-center shrink-0 group-hover:bg-blue-600 group-hover:text-white transition-colors">
+                  <FileText className="h-6 w-6" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black uppercase tracking-tight">Career Hub</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">Real-time stats and match history.</p>
+                </div>
+              </motion.div>
+            </Link>
+
+            <div onClick={() => setShowShareModal(true)} className="cursor-pointer">
+              <motion.div
+                whileHover={{ x: 5 }}
+                className="group p-4 rounded-[2rem] bg-card border border-border shadow-sm flex items-center gap-4 transition-all hover:border-green-500/30"
+              >
+                <div className="h-12 w-12 rounded-2xl bg-green-500/10 flex items-center justify-center shrink-0 group-hover:bg-green-600 group-hover:text-white transition-colors">
+                  <Share2 className="h-6 w-6" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black uppercase tracking-tight">Live Casting</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">Share live scores with your friends.</p>
+                </div>
+              </motion.div>
             </div>
-            <p className="text-2xl font-black text-primary">{liveMatches.length}</p>
-            <p className="text-[10px] font-bold uppercase tracking-wider text-primary">Live Events</p>
-          </motion.div>
+
+            <Link to="/matches/create">
+              <motion.div
+                whileHover={{ x: 5 }}
+                className="group p-4 rounded-[2rem] bg-card border border-border shadow-sm flex items-center gap-4 transition-all hover:border-purple-500/30"
+              >
+                <div className="h-12 w-12 rounded-2xl bg-purple-500/10 flex items-center justify-center shrink-0 group-hover:bg-purple-600 group-hover:text-white transition-colors">
+                  <ShieldCheck className="h-6 w-6" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-black uppercase tracking-tight">Match Engine</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">Professional scoring for any match.</p>
+                </div>
+              </motion.div>
+            </Link>
+          </div>
         </section>
       </div>
+
+      {/* Live Casting Modal */}
+      <AnimatePresence>
+        {showShareModal && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+              onClick={() => setShowShareModal(false)}
+            />
+            
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0, y: 20 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0, y: 20 }}
+              className="relative w-full max-w-lg bg-card rounded-[2.5rem] border shadow-2xl overflow-hidden flex flex-col max-h-[80vh]"
+            >
+              <div className="p-6 border-b flex items-center justify-between bg-muted/20">
+                <div>
+                  <h3 className="text-xl font-black uppercase tracking-tighter italic">Live Casting</h3>
+                  <p className="text-xs text-muted-foreground font-bold uppercase tracking-widest">Select a match to share</p>
+                </div>
+                <Button variant="ghost" size="icon" className="rounded-full" onClick={() => setShowShareModal(false)}>
+                  <X className="h-5 w-5" />
+                </Button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3">
+                {liveMatches.length === 0 ? (
+                  <div className="text-center py-20">
+                     <Play className="h-10 w-10 text-muted-foreground/20 mx-auto mb-4" />
+                     <p className="text-sm font-bold text-muted-foreground uppercase tracking-widest">No Live Matches found</p>
+                  </div>
+                ) : (
+                  liveMatches.map((match: any) => (
+                    <div 
+                      key={match.match_id}
+                      className="group p-4 rounded-3xl bg-muted/30 border border-transparent hover:border-primary/20 hover:bg-muted/50 transition-all flex items-center justify-between gap-4"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                           <div className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse" />
+                           <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Live Now</span>
+                        </div>
+                        <p className="text-sm font-black uppercase truncate tracking-tight">
+                          {formatTeamName(match.team_a_name)} VS {formatTeamName(match.team_b_name)}
+                        </p>
+                        <p className="text-[10px] font-bold text-muted-foreground uppercase mt-0.5">
+                          Innings {match.current_innings_no} | {formatOvers(match.legal_balls)} Overs
+                        </p>
+                      </div>
+                      
+                      <Button 
+                        size="sm" 
+                        variant="cricket"
+                        className="rounded-full h-10 px-6 font-black uppercase tracking-tighter text-[10px] gap-2 shadow-lg shadow-primary/20"
+                        onClick={() => handleCopyLink(match.match_id)}
+                      >
+                        <Copy className="h-3.5 w-3.5" />
+                        Copy Link
+                      </Button>
+                    </div>
+                  ))
+                )}
+              </div>
+              
+              <div className="p-4 bg-muted/10 text-center border-t">
+                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">CricTail Real-time Broadcast</p>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
-
-// Add these to types or local constants if needed
-const Calendar = ({ className }: { className?: string }) => (
-  <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
-);

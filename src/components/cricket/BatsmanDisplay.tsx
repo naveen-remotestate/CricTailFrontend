@@ -1,5 +1,7 @@
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { User } from "@/types";
+import { Card, CardContent } from "@/components/ui/card";
+import { formatPlayerName } from "@/lib/utils";
 
 interface BatsmanDisplayProps {
   striker?: User;
@@ -18,52 +20,88 @@ export function BatsmanDisplay({
   nonStrikerRuns = 0,
   nonStrikerBalls = 0,
 }: BatsmanDisplayProps) {
-  return (
-    <div className="grid grid-cols-2 gap-3">
-      <motion.div
-        layout
-        className="rounded-xl border-2 border-primary bg-primary/5 p-3"
-      >
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-bold text-primary">
-            {striker?.full_name?.charAt(0)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">{striker?.full_name}</p>
-            <p className="text-xs text-primary">* Striker</p>
-          </div>
-        </div>
-        <div className="mt-2 flex items-baseline gap-1">
-          <motion.span
-            key={strikerRuns}
-            initial={{ scale: 1.3, color: "#22c55e" }}
-            animate={{ scale: 1, color: "inherit" }}
-            className="text-2xl font-bold"
-          >
-            {strikerRuns}
-          </motion.span>
-          <span className="text-xs text-muted-foreground">({strikerBalls})</span>
-        </div>
-      </motion.div>
+  const batsmen = [
+    { 
+      user: striker, 
+      runs: strikerRuns, 
+      balls: strikerBalls, 
+      isStriker: true 
+    },
+    { 
+      user: nonStriker, 
+      runs: nonStrikerRuns, 
+      balls: nonStrikerBalls, 
+      isStriker: false 
+    }
+  ].sort((a) => (a.isStriker ? -1 : 1)); // Always keep striker on top
 
-      <motion.div
-        layout
-        className="rounded-xl border border-border bg-card p-3"
-      >
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center text-xs font-bold text-muted-foreground">
-            {nonStriker?.full_name?.charAt(0)}
-          </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold truncate">{nonStriker?.full_name}</p>
-            <p className="text-xs text-muted-foreground">Non-striker</p>
-          </div>
+  return (
+    <Card className="overflow-hidden border-none shadow-md bg-card/50">
+      <CardContent className="p-0">
+        <div className="flex flex-col">
+          <AnimatePresence mode="popLayout" initial={false}>
+            {batsmen.map((b) => (
+              <motion.div
+                key={b.user?.user_id || (b.isStriker ? 'striker' : 'non-striker')}
+                layout
+                initial={{ opacity: 0, y: b.isStriker ? -20 : 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.95 }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className={`flex items-center justify-between px-4 py-3 ${
+                  b.isStriker ? "bg-primary/5 border-b border-primary/10" : ""
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <div className="relative">
+                    <div className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold border-2 ${
+                      b.isStriker ? "bg-primary/20 border-primary/30 text-primary" : "bg-muted border-muted-foreground/10 text-muted-foreground"
+                    }`}>
+                      {b.user?.full_name?.charAt(0) || "?"}
+                    </div>
+                    {b.isStriker && (
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="absolute -right-1 -bottom-1 bg-primary text-[10px] p-0.5 rounded-full text-primary-foreground shadow-sm"
+                      >
+                        🏏
+                      </motion.div>
+                    )}
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-bold truncate max-w-[120px] ${b.isStriker ? "text-foreground" : "text-muted-foreground"}`}>
+                      {formatPlayerName(b.user?.full_name)}
+                    </span>
+                    <span className="text-[10px] uppercase tracking-wider font-black text-muted-foreground/60">
+                      {b.isStriker ? "On Strike" : "Non-Striker"}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <div className="flex flex-col items-end">
+                    <div className="flex items-baseline gap-1">
+                      <motion.span 
+                        key={b.runs}
+                        initial={b.isStriker ? { scale: 1.2, color: "var(--primary)" } : {}}
+                        animate={{ scale: 1, color: "inherit" }}
+                        className={`text-xl font-black ${b.isStriker ? "text-foreground" : "text-muted-foreground"}`}
+                      >
+                        {b.runs}
+                      </motion.span>
+                      <span className="text-[10px] font-bold text-muted-foreground/40">
+                        ({b.balls})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </div>
-        <div className="mt-2 flex items-baseline gap-1">
-          <span className="text-2xl font-bold">{nonStrikerRuns}</span>
-          <span className="text-xs text-muted-foreground">({nonStrikerBalls})</span>
-        </div>
-      </motion.div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
