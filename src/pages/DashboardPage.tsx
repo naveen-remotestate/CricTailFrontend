@@ -10,10 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   PlusCircle, 
   Trophy, 
-  TrendingUp, 
-  Target, 
   Zap, 
-  Activity, 
   Shield, 
   Sword,
   Check,
