@@ -1,0 +1,52 @@
+path: http://localhost:8080/register
+
+	router.POST("/register", handler.RegisterUser)
+    input sample:
+    {
+    "full_name":"naveen yadav",
+    "mobile_number":"9876543210",
+    "password":"naveen"
+}
+
+    output:
+    {
+    "message": "user registered",
+    "user": "2efef7a1-f0c9-4b70-b653-879682985cf5"
+}
+
+
+
+	router.POST("/login", handler.LoginUser)
+
+    input:
+    {
+    "mobile_number":"9876543210",
+    "password":"naveen"
+}
+    output:
+    {
+    "message": "login successful",
+    "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3ODA2NDAyMzgsInNlc3Npb25faWQiOiI0ZWU2ZjZhNy1jMGJhLTQxNjItYTc4Yi1lNmQ2ZmU4NWRkY2MiLCJ1c2VyX2lkIjoiMmVmZWY3YTEtZjBjOS00YjcwLWI2NTMtODc5NjgyOTg1Y2Y1In0.Of0wGXKCG9VvIukrzxlauCTy0CYN0AdvHJllkx_o-iM"
+}
+
+
+
+	router.POST("/forgot-password", handler.ForgotPassword)
+
+    input:
+    {
+    "mobile_number":"1234567898",
+    "otp":"8080",
+    "password":"virat123"
+}
+output:
+ {
+    "message": "password updated successfully"
+}
+
+	auth.POST("/logout", handler.LogoutUser) //either POST(mostly) or DELETE
+    output:{
+		"message": "logout successful",
+	}
+
+    token will be stored in localstorage, use axios then create hooks then use the hooks
