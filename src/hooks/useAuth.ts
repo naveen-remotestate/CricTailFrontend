@@ -37,17 +37,32 @@ export function useLogin() {
       password: string;
     }) => {
       const data = await authService.login({ mobile_number, password });
-      return data;
+      
+      let full_name = "User";
+      try {
+        // Fetch player details using the new token to get the full name
+        const { apiClient } = await import("@/services/api/client");
+        const playersResponse = await apiClient.get(`/players?search=${mobile_number}`, {
+          headers: { Authorization: `Bearer ${data.token}` }
+        });
+        
+        const players = playersResponse.data.players || [];
+        const me = players.find((p: any) => p.mobile_number === mobile_number);
+        if (me) {
+          full_name = me.full_name;
+        }
+      } catch (error) {
+        console.error("Failed to fetch user profile", error);
+      }
+
+      return { ...data, full_name };
     },
     onSuccess: (data, variables) => {
       const decoded = decodeToken(data.token);
       
-      // Create a user object from decoded token info
-      // Using placeholder for full_name as it's not in the token spec
-      // Capturing mobile_number from login variables
       const user: User = {
         user_id: decoded?.user_id || "unknown",
-        full_name: "User", // Placeholder
+        full_name: data.full_name,
         mobile_number: variables.mobile_number,
         is_active: true,
         created_at: new Date().toISOString(),

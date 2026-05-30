@@ -1,5 +1,4 @@
 import { apiClient } from "./client";
-import type { User, ApiResponse } from "@/types";
 
 export interface RegisterResponse {
   message: string;
