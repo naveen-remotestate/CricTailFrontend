@@ -4,11 +4,24 @@ import { useMatch } from "@/hooks/useMatches";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatOvers, calculateRunRate, formatPlayerName } from "@/lib/utils";
-import { Trophy } from "lucide-react";
+import { Trophy, ArrowLeft, Share2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 export default function ScorecardPage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: match, isLoading } = useMatch(id || "");
+
+  const handleShareMatch = () => {
+    const url = `${window.location.origin}/matches/${id}/live`;
+    navigator.clipboard.writeText(url).then(() => {
+      toast.success("Live link copied! Share it with viewers.");
+    }).catch(() => {
+      toast.error("Failed to copy link.");
+    });
+  };
 
   if (isLoading) {
     return (
@@ -28,16 +41,32 @@ export default function ScorecardPage() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-      >
-        <h1 className="text-2xl font-bold mb-2">Full Scorecard</h1>
-        <p className="text-muted-foreground">
-          {match.team_a_name} vs {match.team_b_name}
-        </p>
-      </motion.div>
+    <div className="min-h-screen bg-background pb-10">
+      <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-lg">
+        <div className="mx-auto max-w-4xl px-4 py-3">
+          <div className="flex items-center justify-between">
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground font-black uppercase tracking-tighter italic">
+              <ArrowLeft className="h-4 w-4" /> Back
+            </button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-primary/20 text-primary hover:bg-primary/10" onClick={handleShareMatch} title="Share Match">
+                <Share2 className="h-3.5 w-3.5" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-4xl px-4 py-6 space-y-6">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+        >
+          <h1 className="text-3xl font-black tracking-tighter uppercase italic italic leading-none">Full Scorecard</h1>
+          <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+            {match.team_a_name} vs {match.team_b_name}
+          </p>
+        </motion.div>
 
       {match.innings?.map((innings: any, idx: number) => {
         const battingTeamName = match.team_a_id === innings.batting_team_id ? match.team_a_name : match.team_b_name;
@@ -150,6 +179,7 @@ export default function ScorecardPage() {
           </span>
         </div>
       )}
+      </div>
     </div>
   );
 }

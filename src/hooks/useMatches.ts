@@ -42,6 +42,18 @@ export function useScorecard(id: string) {
   });
 }
 
+export function useBallEvents(inningsID: string) {
+  return useQuery({
+    queryKey: ["ball-events", inningsID],
+    queryFn: async () => {
+      const data = await matchService.getBallEvents(inningsID);
+      return data.ball_events;
+    },
+    enabled: !!inningsID,
+    refetchInterval: 5000, // Sync every 5 seconds
+  });
+}
+
 export function useCreateMatch() {
   return useMutation({
     mutationFn: async (data: any) => {

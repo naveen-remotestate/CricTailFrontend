@@ -7,9 +7,10 @@ import { cn } from "@/lib/utils";
 interface ScoreHeaderProps {
   match: Match;
   liveState: LiveMatchState;
+  compact?: boolean;
 }
 
-export function ScoreHeader({ match, liveState }: ScoreHeaderProps) {
+export function ScoreHeader({ match, liveState, compact }: ScoreHeaderProps) {
   const isSecondInnings = match.current_innings_no === 2;
   
   // Use backend properties directly
@@ -34,17 +35,53 @@ export function ScoreHeader({ match, liveState }: ScoreHeaderProps) {
     ? `${tossWinnerName} WON TOSS & CHOSE TO ${match.toss_decision}`
     : "TOSS NOT YET CONDUCTED";
 
-  return (
-    <div className="sticky top-16 z-40 w-full bg-background border-b shadow-sm">
-      {/* Primary Score Bar */}
-      <div className="bg-gradient-to-r from-[#1a1a2e] to-[#16213e] text-white px-4 py-3">
+  if (compact) {
+    return (
+      <div className="sticky top-0 z-40 w-full bg-[#1a1a2e] text-white px-4 py-1.5 border-b border-primary/20 shadow-lg">
         <div className="mx-auto max-w-7xl flex items-center justify-between">
-          <div className="flex flex-col gap-1">
+          <div className="flex flex-col">
             <div className="flex items-center gap-2 mb-0.5">
-              <span className="text-[10px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 rounded-sm">
-                INNINGS {match.current_innings_no}
+              <span className="text-[8px] font-black uppercase bg-primary px-1 rounded-sm">INN {match.current_innings_no}</span>
+              <h2 className="text-[11px] font-black uppercase truncate max-w-[120px]">{formatTeamName(battingTeamName)}</h2>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={cn("text-[10px] font-black", isTeamABatting ? "text-white" : "text-white/30 uppercase")}>{formatTeamName(teamAName)}</span>
+              <span className="text-[8px] font-black text-white/10 italic">vs</span>
+              <span className={cn("text-[10px] font-black", !isTeamABatting ? "text-white" : "text-white/30 uppercase")}>{formatTeamName(teamBName)}</span>
+            </div>
+          </div>
+          
+          <div className="flex items-center gap-4">
+            <div className="flex flex-col items-end">
+              <div className="text-xl font-black tracking-tighter leading-none">
+                {liveState.total_runs}<span className="text-primary mx-0.5">/</span>{liveState.total_wickets}
+              </div>
+              <div className="text-[8px] font-bold text-white/40 uppercase tracking-tighter mt-1">
+                {formatOvers(legalBallsBowled)} <span className="mx-0.5 opacity-20">|</span> {match.overs} OV
+              </div>
+            </div>
+            {isSecondInnings && target && (
+              <div className="bg-primary/20 text-primary text-[8px] font-black px-2 py-1 rounded-lg border border-primary/30 uppercase tracking-tighter text-center leading-tight">
+                NEED<br />{target - liveState.total_runs}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="sticky top-0 z-40 w-full bg-background border-b shadow-sm">
+      {/* Primary Score Bar */}
+      <div className="bg-gradient-to-r from-[#1a1a2e] to-[#16213e] text-white px-4 py-2">
+        <div className="mx-auto max-w-7xl flex items-center justify-between">
+          <div className="flex flex-col gap-0.5">
+            <div className="flex items-center gap-2">
+              <span className="text-[9px] font-black uppercase tracking-widest text-primary bg-primary/10 px-1.5 rounded-sm">
+                INN {match.current_innings_no}
               </span>
-              <h2 className="text-sm font-bold tracking-tight uppercase truncate max-w-[150px]">
+              <h2 className="text-xs font-bold tracking-tight uppercase truncate max-w-[150px]">
                 {formatTeamName(battingTeamName)}
               </h2>
             </div>
@@ -54,19 +91,19 @@ export function ScoreHeader({ match, liveState }: ScoreHeaderProps) {
               <div className="flex flex-col">
                 <span className={cn(
                   "text-xs font-black transition-all",
-                  isTeamABatting ? "text-lg text-white" : "text-[10px] text-white/40 uppercase"
+                  isTeamABatting ? "text-base text-white" : "text-[9px] text-white/40 uppercase"
                 )}>
                   {formatTeamName(teamAName)}
                 </span>
               </div>
 
-              <span className="text-[10px] font-black text-white/20">VS</span>
+              <span className="text-[9px] font-black text-white/20">VS</span>
 
               {/* Team B */}
               <div className="flex flex-col">
                 <span className={cn(
                   "text-xs font-black transition-all",
-                  !isTeamABatting ? "text-lg text-white" : "text-[10px] text-white/40 uppercase"
+                  !isTeamABatting ? "text-base text-white" : "text-[9px] text-white/40 uppercase"
                 )}>
                   {formatTeamName(teamBName)}
                 </span>
@@ -80,12 +117,12 @@ export function ScoreHeader({ match, liveState }: ScoreHeaderProps) {
                 key={liveState.total_runs}
                 initial={{ scale: 1.1 }}
                 animate={{ scale: 1 }}
-                className="text-3xl font-black tracking-tighter leading-none"
+                className="text-2xl font-black tracking-tighter leading-none"
               >
                 {liveState.total_runs}<span className="text-primary mx-0.5">/</span>{liveState.total_wickets}
               </motion.div>
-              <div className="text-[10px] font-bold text-white/40 uppercase tracking-tighter mt-1">
-                {formatOvers(legalBallsBowled)} <span className="mx-1">|</span> {match.overs} OVS
+              <div className="text-[9px] font-bold text-white/40 uppercase tracking-tighter mt-1">
+                {formatOvers(legalBallsBowled)} <span className="mx-0.5">|</span> {match.overs} OVS
               </div>
             </div>
           </div>
@@ -93,8 +130,8 @@ export function ScoreHeader({ match, liveState }: ScoreHeaderProps) {
       </div>
 
       {/* Dynamic Info Bar (TV Style) */}
-      <div className="bg-muted/50 px-4 py-1.5 overflow-hidden">
-        <div className="mx-auto max-w-7xl flex items-center justify-between text-[10px] font-black uppercase tracking-tight">
+      <div className="bg-muted/50 px-4 py-1 overflow-hidden">
+        <div className="mx-auto max-w-7xl flex items-center justify-between text-[9px] font-black uppercase tracking-tight">
           {isSecondInnings ? (
             // 2nd Innings: Chasing Info
             <>

@@ -75,4 +75,9 @@ export const matchService = {
     const response = await apiClient.get<{ scorecard: MatchScorecardResponse }>(`/matches/${matchID}/scorecard`);
     return response.data;
   },
+
+  getBallEvents: async (inningsID: string) => {
+    const response = await apiClient.get<{ ball_events: any[] }>(`/innings/${inningsID}/ball-events`);
+    return response.data;
+  },
 };

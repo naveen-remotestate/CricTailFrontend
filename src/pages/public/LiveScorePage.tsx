@@ -1,6 +1,6 @@
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { useMatch, useLiveState, useScorecard } from "@/hooks/useMatches";
+import { useMatch, useLiveState, useScorecard, useBallEvents } from "@/hooks/useMatches";
 import { ScoreHeader } from "@/components/cricket/ScoreHeader";
 import { BatsmanDisplay } from "@/components/cricket/BatsmanDisplay";
 import { BowlerDisplay } from "@/components/cricket/BowlerDisplay";
@@ -19,9 +19,11 @@ import { formatOvers, calculateRunRate, formatPlayerName, formatTeamName, cn } f
 
 export default function LiveScorePage() {
   const { id } = useParams<{ id: string }>();
+  const navigate = useNavigate();
   const { data: match, isLoading: matchLoading } = useMatch(id || "");
   const { data: liveState, isLoading: liveLoading } = useLiveState(id || "");
   const { data: scorecard, isLoading: scorecardLoading } = useScorecard(id || "");
+  const { data: apiBallEvents } = useBallEvents(match?.current_inning_id || "");
   const { user } = useAuthStore();
   const [showScorecard, setShowScorecard] = useState(false);
 
@@ -59,9 +61,9 @@ export default function LiveScorePage() {
   const ballsRemaining = (match.overs * 6) - (match.legal_balls || 0);
 
   const activeOverNo = Math.floor((match?.legal_balls || 0) / 6);
-  const currentInnings = match?.innings?.find(i => i.innings_no === match.current_innings_no);
-  const ballEvents = currentInnings?.ball_events || [];
-  const ballsInCurrentOver = ballEvents.filter(b => b.over_no === activeOverNo).sort((a, b) => a.ball_sequence - b.ball_sequence);
+  const ballsInCurrentOver = (apiBallEvents || [])
+    .filter((b: any) => b.over_no === (activeOverNo + 1))
+    .sort((a: any, b: any) => a.ball_sequence - b.ball_sequence);
 
   const striker: User = {
     user_id: match.striker_id || "",
@@ -196,11 +198,11 @@ export default function LiveScorePage() {
       <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-lg">
         <div className="mx-auto max-w-7xl px-4 py-3">
           <div className="flex items-center justify-between">
-            <Link to="/" className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground font-black uppercase tracking-tighter italic">
               <ArrowLeft className="h-4 w-4" /> Back
-            </Link>
+            </button>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full" onClick={handleShareMatch} title="Share Match">
+              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-primary/20 text-primary hover:bg-primary/10" onClick={handleShareMatch} title="Share Match">
                 <Share2 className="h-3.5 w-3.5" />
               </Button>
               <div className="h-4 w-[1px] bg-border mx-1" />
@@ -247,7 +249,7 @@ export default function LiveScorePage() {
                 </div>
                 <span className="text-[10px] font-black uppercase text-primary">Over {activeOverNo + 1}</span>
             </div>
-            <div className="flex flex-wrap justify-center gap-2 items-center">
+            <div className="flex flex-nowrap justify-center gap-1 sm:gap-1.5 items-center w-full overflow-hidden py-2 px-1">
                 {(() => {
                   const legalBallsBowled = ballsInCurrentOver.filter(b => b.is_legal_delivery).length;
                   const remainingLegalNeeded = Math.max(0, 6 - legalBallsBowled);
@@ -257,6 +259,12 @@ export default function LiveScorePage() {
                     ...Array(remainingLegalNeeded).fill(null).map((_, i) => ({ type: 'placeholder' as const, index: i }))
                   ];
 
+                  const ballCount = totalItems.length;
+                  const sizeClass = ballCount > 10 ? "h-8 w-8 text-[7px] border" : 
+                                   ballCount > 8 ? "h-9 w-9 text-[8px] border-2" : 
+                                   ballCount > 6 ? "h-10 w-10 text-[9px] border-2" : 
+                                   "h-12 w-12 text-[10px] border-2";
+
                   return totalItems.map((item, idx) => {
                     if (item.type === 'ball') {
                       const ball = item.data!;
@@ -265,20 +273,23 @@ export default function LiveScorePage() {
                       
                       if (ball.is_wicket) {
                         displayText = "W";
-                        if (ball.extra_type === "WIDE") displayText = `W+${ball.total_runs}wd`;
-                        else if (ball.extra_type === "NO_BALL") displayText = `W+${ball.total_runs}nb`;
+                        if (ball.extra_type === "WIDE") {
+                          displayText = ball.extra_runs > 0 ? `W+${ball.extra_runs}wd` : "W+wd";
+                        } else if (ball.extra_type === "NO_BALL") {
+                          displayText = ball.runs_off_bat > 0 ? `W+${ball.runs_off_bat}nb` : "W+nb";
+                        }
                         colorClass = "border-red-500 bg-red-500/10 text-red-600";
                       } else if (ball.extra_type === "WIDE") {
-                        displayText = `${ball.total_runs}wd`;
+                        displayText = ball.extra_runs > 0 ? `${ball.extra_runs}wd` : "wd";
                         colorClass = "border-yellow-600 bg-yellow-500/10 text-yellow-700";
                       } else if (ball.extra_type === "NO_BALL") {
-                        displayText = `${ball.total_runs}nb`;
+                        displayText = ball.runs_off_bat > 0 ? `${ball.runs_off_bat}nb` : "nb";
                         colorClass = "border-yellow-600 bg-yellow-500/10 text-yellow-700";
                       } else if (ball.extra_type === "BYE") {
-                        displayText = `${ball.total_runs}b`;
+                        displayText = ball.total_runs > 0 ? `${ball.total_runs}b` : "b";
                         colorClass = "border-blue-400 bg-blue-400/10 text-blue-600";
                       } else if (ball.extra_type === "LEG_BYE") {
-                        displayText = `${ball.total_runs}lb`;
+                        displayText = ball.total_runs > 0 ? `${ball.total_runs}lb` : "lb";
                         colorClass = "border-blue-400 bg-blue-400/10 text-blue-600";
                       } else {
                         displayText = ball.runs_off_bat.toString();
@@ -288,7 +299,8 @@ export default function LiveScorePage() {
 
                       return (
                         <div key={`ball-${idx}`} className={cn(
-                          "h-10 w-10 rounded-full border-2 flex items-center justify-center font-black text-xs transition-all",
+                          "rounded-full flex items-center justify-center font-black transition-all shadow-sm shrink-0",
+                          sizeClass,
                           colorClass
                         )}>{displayText}</div>
                       );
@@ -296,9 +308,10 @@ export default function LiveScorePage() {
                       const isNext = idx === ballsInCurrentOver.length && legalBallsBowled < 6;
                       return (
                         <div key={`placeholder-${idx}`} className={cn(
-                          "h-10 w-10 rounded-full border-2 border-dashed flex items-center justify-center font-black text-xs transition-all",
+                          "rounded-full border-dashed flex items-center justify-center font-black transition-all shrink-0",
+                          sizeClass,
                           isNext ? "border-primary bg-primary/5 text-primary scale-110 shadow-md animate-pulse" : "border-muted text-muted-foreground/20"
-                        )}>•</div>
+                        )}>{ballCount > 10 ? "" : "•"}</div>
                       );
                     }
                   });
@@ -314,22 +327,100 @@ export default function LiveScorePage() {
               <Activity className="h-4 w-4 text-primary" />
               <span className="text-sm font-semibold">Ball-by-Ball</span>
             </div>
-            <div className="space-y-2 max-h-48 overflow-y-auto scrollbar-hide">
-               {ballEvents.length === 0 ? (
+            <div className="space-y-0 max-h-96 overflow-y-auto scrollbar-hide">
+               {(apiBallEvents || []).length === 0 ? (
                  <p className="text-xs text-muted-foreground italic text-center py-4">Live ball events appearing here...</p>
                ) : (
-                 ballEvents.slice().reverse().map((ball, i) => (
-                   <motion.div key={i} initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-start gap-2 text-sm border-b border-border/50 pb-2 last:border-0">
-                      <span className="text-[10px] text-muted-foreground font-mono min-w-[2.5rem] mt-0.5">{ball.over_no}.{ball.ball_in_over}</span>
-                      <span className="flex-1">
-                        {ball.is_wicket ? <span className="text-red-500 font-bold uppercase tracking-widest">Wicket!</span> : 
-                         ball.runs_off_bat === 4 ? <span className="text-primary font-bold italic">FOUR!</span> :
-                         ball.runs_off_bat === 6 ? <span className="text-purple-500 font-black italic underline">SIX!</span> :
-                         `${ball.runs_off_bat} run${ball.runs_off_bat !== 1 ? 's' : ''}`}
-                         {ball.extra_type && <span className="ml-2 text-xs font-bold text-yellow-600">({ball.total_runs} {ball.extra_type})</span>}
-                      </span>
-                   </motion.div>
-                 ))
+                 (() => {
+                   const reversedEvents = (apiBallEvents || []).slice().reverse();
+                   return reversedEvents.map((ball: any, i: number) => {
+                     const isOverEnd = i < reversedEvents.length - 1 && ball.over_no !== reversedEvents[i+1].over_no;
+                     
+                     return (
+                       <div key={i}>
+                         <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 py-3 px-2 border-b border-border/30 hover:bg-muted/5 transition-colors">
+                            {/* Subtle Ball Count Circle */}
+                            <div className="h-10 w-10 rounded-full border border-border bg-muted/10 flex items-center justify-center shrink-0">
+                               <span className="text-[10px] font-black text-muted-foreground italic leading-none">{ball.over_no}.{ball.ball_in_over}</span>
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                              <div className="flex flex-col">
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <p className="text-[11px] font-black uppercase tracking-tight leading-none text-foreground truncate">
+                                    {formatPlayerName(ball.bowler_name)} to {formatPlayerName(ball.striker_name)}
+                                  </p>
+                                  {/* Result Indicator Badge */}
+                                  <div className={cn(
+                                    "px-2 py-0.5 rounded-full border font-black text-[9px] uppercase tracking-widest shadow-sm",
+                                    ball.is_wicket ? "border-red-500 bg-red-500/10 text-red-600" :
+                                    ball.extra_type === "WIDE" || ball.extra_type === "NO_BALL" ? "border-yellow-600 bg-yellow-500/10 text-yellow-700" :
+                                    ball.runs_off_bat === 4 ? "border-primary bg-primary/10 text-primary" :
+                                    ball.runs_off_bat === 6 ? "border-purple-600 bg-purple-500/10 text-purple-600" :
+                                    ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE" ? "border-blue-400 bg-blue-400/10 text-blue-600" :
+                                    "border-muted bg-muted/20 text-muted-foreground"
+                                  )}>
+                                    {(() => {
+                                      if (ball.is_wicket) return "W";
+                                      if (ball.extra_type === "WIDE") return "wd";
+                                      if (ball.extra_type === "NO_BALL") return "nb";
+                                      if (ball.extra_type === "BYE") return "b";
+                                      if (ball.extra_type === "LEG_BYE") return "lb";
+                                      return ball.runs_off_bat;
+                                    })()}
+                                  </div>
+                                </div>
+                                <div className="text-[10px] font-medium text-muted-foreground flex items-center gap-2">
+                                  {ball.is_wicket ? (
+                                    <div className="flex items-center gap-2">
+                                      <span className="text-red-500 font-black uppercase italic tracking-widest text-[9px]">
+                                        OUT! {ball.wicket_type?.replace("_", " ")} {ball.dismissed_by_fielder_name ? `(${formatPlayerName(ball.dismissed_by_fielder_name)})` : ""}
+                                      </span>
+                                      {ball.extra_type && (
+                                        <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
+                                          {(() => {
+                                            if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `${ball.extra_runs} ` : "";
+                                            if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `${ball.runs_off_bat} ` : "";
+                                            if (ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE") return ball.total_runs > 0 ? `${ball.total_runs} ` : "";
+                                            return "";
+                                          })()}
+                                          {ball.extra_type}
+                                        </span>
+                                      )}
+                                    </div>
+                                  ) : (
+                                    <div className="flex items-center gap-2">
+                                      <span className="font-bold text-foreground/80 uppercase">
+                                        {ball.runs_off_bat === 4 ? "FOUR RUNS" : ball.runs_off_bat === 6 ? "SIXER!" : ball.runs_off_bat === 0 && !ball.extra_type ? "no run" : `${ball.runs_off_bat} run${ball.runs_off_bat !== 1 ? 's' : ''}`}
+                                      </span>
+                                      {ball.extra_type && (
+                                        <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
+                                          {(() => {
+                                            if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `${ball.extra_runs} ` : "";
+                                            if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `${ball.runs_off_bat} ` : "";
+                                            if (ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE") return ball.total_runs > 0 ? `${ball.total_runs} ` : "";
+                                            return "";
+                                          })()}
+                                          {ball.extra_type}
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                         </motion.div>
+                         {isOverEnd && (
+                           <div className="py-4 flex items-center gap-3">
+                              <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                              <span className="text-[8px] font-black uppercase tracking-[0.3em] text-muted-foreground bg-muted/30 px-3 py-1 rounded-full border border-border/50">End of Over {reversedEvents[i+1].over_no}</span>
+                              <div className="h-[1px] flex-1 bg-gradient-to-r from-border via-border to-transparent" />
+                           </div>
+                         )}
+                       </div>
+                     );
+                   });
+                 })()
                )}
             </div>
           </CardContent>
