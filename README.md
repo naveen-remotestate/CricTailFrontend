@@ -1,4 +1,4 @@
-# CricTail - Cricket Scoring Platform
+# CricTale - Cricket Scoring Platform
 
 A modern, production-grade cricket scoring application built for office and friendly Friday matches.
 

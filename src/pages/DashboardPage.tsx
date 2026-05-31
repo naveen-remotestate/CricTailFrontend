@@ -10,7 +10,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { 
   PlusCircle, 
   Trophy, 
-  Zap, 
   Shield, 
   Sword,
   Check,
@@ -18,7 +17,10 @@ import {
   Hand,
   Hash,
   Award,
-  CircleDot
+  CircleDot,
+  X,
+  Settings2,
+  Activity
 } from "lucide-react";
 import { formatPlayerName, formatOvers, cn } from "@/lib/utils";
 
@@ -36,11 +38,20 @@ export default function DashboardPage() {
   const battingSR = stats?.total_balls_faced > 0 
     ? ((stats.total_runs / stats.total_balls_faced) * 100).toFixed(1) 
     : "0.0";
+  const battingAvg = stats?.total_outs > 0
+    ? (stats.total_runs / stats.total_outs).toFixed(1)
+    : stats?.total_runs > 0 ? stats.total_runs.toFixed(1) : "0.0";
 
   // --- BOWLING CALCULATIONS ---
   const bowlingEcon = stats?.total_balls_bowled > 0 
     ? ((stats.total_runs_conceded / stats.total_balls_bowled) * 6).toFixed(2) 
     : "0.00";
+  const bowlingAvg = stats?.total_wickets_taken > 0
+    ? (stats.total_runs_conceded / stats.total_wickets_taken).toFixed(1)
+    : "0.0";
+  const bowlingStrikeRate = stats?.total_wickets_taken > 0
+    ? (stats.total_balls_bowled / stats.total_wickets_taken).toFixed(1)
+    : "0.0";
 
   // --- GENERAL ---
   const winPercentage = stats?.matches_played > 0
@@ -65,7 +76,7 @@ export default function DashboardPage() {
       <motion.div
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex flex-col sm:flex-row sm:items-center justify-between gap-6"
+        className="flex items-center justify-between"
       >
         <div className="flex items-center gap-4">
            <div className="h-16 w-16 rounded-3xl bg-card border border-border flex items-center justify-center text-primary font-black text-2xl shadow-sm">
@@ -75,13 +86,13 @@ export default function DashboardPage() {
              <h1 className="text-3xl font-black tracking-tighter uppercase italic leading-none">
                Dashboard
              </h1>
-             <p className="text-sm font-medium text-muted-foreground mt-1">
-               Welcome back, <span className="text-foreground font-bold">{formatPlayerName(user?.full_name)}</span>
+             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+               Welcome, <span className="text-foreground">{formatPlayerName(user?.full_name)}</span>
              </p>
            </div>
         </div>
         <div className="flex gap-2">
-           <Button size="sm" className="rounded-full font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 h-10 px-6" asChild>
+           <Button size="sm" className="hidden sm:flex rounded-full font-black uppercase tracking-widest text-[10px] shadow-lg shadow-primary/20 h-10 px-6" asChild>
              <Link to="/matches/create"><PlusCircle className="h-4 w-4 mr-2" /> New Match</Link>
            </Button>
            <Button size="sm" variant="outline" className="rounded-full font-black uppercase tracking-widest text-[10px] h-10 px-6 bg-card" asChild>
@@ -138,7 +149,7 @@ export default function DashboardPage() {
         
         <Card className="rounded-[2.5rem] border border-border bg-card shadow-sm overflow-hidden">
            <CardContent className="p-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4 mb-6">
+              <div className="grid grid-cols-3 gap-y-6 gap-x-4 mb-6">
                  <div>
                     <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Total Runs</p>
                     <p className="text-3xl font-black tracking-tight text-primary leading-none">{stats?.total_runs || 0}</p>
@@ -148,8 +159,8 @@ export default function DashboardPage() {
                     <p className="text-xl font-black tracking-tight">{battingSR}</p>
                  </div>
                  <div className="border-l border-border/50 pl-4">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Highest</p>
-                    <p className="text-xl font-black tracking-tight italic">{stats?.highest_run || 0}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Average</p>
+                    <p className="text-xl font-black tracking-tight">{battingAvg}</p>
                  </div>
               </div>
 
@@ -159,16 +170,16 @@ export default function DashboardPage() {
                     <p className="text-[8px] font-bold uppercase text-muted-foreground">Balls Faced</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
-                    <p className="text-xs font-black">{stats?.hundreds || 0}</p>
-                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Hundreds</p>
-                 </div>
-                 <div className="bg-muted/30 rounded-2xl p-3">
-                    <p className="text-xs font-black">{stats?.fifties || 0}</p>
-                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Fifties</p>
-                 </div>
-                 <div className="bg-muted/30 rounded-2xl p-3">
-                    <p className="text-xs font-black">{(stats?.total_fours || 0) + (stats?.total_sixes || 0)}</p>
-                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Boundaries</p>
+                    <div className="flex justify-between items-end">
+                       <div>
+                          <p className="text-xs font-black">{stats?.hundreds || 0}</p>
+                          <p className="text-[8px] font-bold uppercase text-muted-foreground">100s</p>
+                       </div>
+                       <div className="text-right">
+                          <p className="text-xs font-black">{stats?.fifties || 0}</p>
+                          <p className="text-[8px] font-bold uppercase text-muted-foreground">50s</p>
+                       </div>
+                    </div>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
                     <p className="text-xs font-black text-red-500">{stats?.ducks || 0}</p>
@@ -179,15 +190,22 @@ export default function DashboardPage() {
                     <p className="text-[8px] font-bold uppercase text-muted-foreground">Golden Ducks</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
+                    <p className="text-xs font-black text-primary">{stats?.total_fours || 0}</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Total 4s</p>
+                 </div>
+                 <div className="bg-muted/30 rounded-2xl p-3">
+                    <p className="text-xs font-black text-primary">{stats?.total_sixes || 0}</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Total 6s</p>
+                 </div>
+                 <div className="bg-muted/30 rounded-2xl p-3">
                     <p className="text-xs font-black">{stats?.total_outs || 0}</p>
                     <p className="text-[8px] font-bold uppercase text-muted-foreground">Times Out</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3 flex items-center justify-between">
                     <div>
-                      <p className="text-xs font-black">{stats?.total_fours || 0}</p>
-                      <p className="text-[8px] font-bold uppercase text-muted-foreground">Total 4s</p>
+                      <p className="text-xs font-black italic">{stats?.highest_run || 0}</p>
+                      <p className="text-[8px] font-bold uppercase text-muted-foreground">Highest</p>
                     </div>
-                    <CircleDot className="h-3 w-3 text-muted-foreground/20" />
                  </div>
               </div>
            </CardContent>
@@ -203,7 +221,7 @@ export default function DashboardPage() {
         
         <Card className="rounded-[2.5rem] border border-border bg-card shadow-sm overflow-hidden">
            <CardContent className="p-6">
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-y-6 gap-x-4 mb-6">
+              <div className="grid grid-cols-3 gap-y-6 gap-x-4 mb-6">
                  <div>
                     <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Wickets</p>
                     <p className="text-3xl font-black tracking-tight text-blue-600 leading-none">{stats?.total_wickets_taken || 0}</p>
@@ -213,8 +231,8 @@ export default function DashboardPage() {
                     <p className="text-xl font-black tracking-tight">{bowlingEcon}</p>
                  </div>
                  <div className="border-l border-border/50 pl-4">
-                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Overs</p>
-                    <p className="text-xl font-black tracking-tight">{formatOvers(stats?.total_balls_bowled || 0)}</p>
+                    <p className="text-[9px] font-black uppercase tracking-widest text-muted-foreground/60 mb-1">Average</p>
+                    <p className="text-xl font-black tracking-tight">{bowlingAvg}</p>
                  </div>
               </div>
 
@@ -228,23 +246,28 @@ export default function DashboardPage() {
                     <p className="text-[8px] font-bold uppercase text-muted-foreground">Maidens</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
-                    <p className="text-xs font-black text-blue-600">{stats?.wides || 0} / {stats?.no_balls || 0}</p>
-                    <p className="text-[8px] font-bold uppercase text-muted-foreground">WD / NB</p>
+                    <p className="text-xs font-black text-blue-600">{stats?.wides || 0}</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Wides (WD)</p>
+                 </div>
+                 <div className="bg-muted/30 rounded-2xl p-3">
+                    <p className="text-xs font-black text-blue-600">{stats?.no_balls || 0}</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">No Balls (NB)</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
                     <p className="text-xs font-black text-blue-600">{stats?.HighestWicketTaken || 0}</p>
-                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Best Fig</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Best Figures</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
                     <p className="text-xs font-black">{stats?.total_balls_bowled || 0}</p>
-                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Balls Bowled</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Total Balls</p>
                  </div>
-                 <div className="bg-muted/30 rounded-2xl p-3 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs font-black">{stats?.total_sixes || 0}</p>
-                      <p className="text-[8px] font-bold uppercase text-muted-foreground">Total 6s</p>
-                    </div>
-                    <Zap className="h-3 w-3 text-muted-foreground/20" />
+                 <div className="bg-muted/30 rounded-2xl p-3">
+                    <p className="text-xs font-black">{formatOvers(stats?.total_balls_bowled || 0)}</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Total Overs</p>
+                 </div>
+                 <div className="bg-muted/30 rounded-2xl p-3">
+                    <p className="text-xs font-black">{bowlingStrikeRate}</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Strike Rate</p>
                  </div>
               </div>
            </CardContent>
@@ -261,7 +284,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-3 gap-3">
            {[
              { label: "Catches", value: stats?.catches || 0, icon: Hand, color: "text-orange-500" },
-             { label: "Run Outs", value: stats?.run_outs || 0, icon: Zap, color: "text-orange-600" },
+             { label: "Run Outs", value: stats?.run_outs || 0, icon: Activity, color: "text-orange-600" },
              { label: "Stumpings", value: stats?.stumping || 0, icon: Medal, color: "text-orange-400" },
            ].map((item, i) => (
              <Card key={i} className="rounded-[2rem] border border-border bg-card shadow-sm">
@@ -277,7 +300,7 @@ export default function DashboardPage() {
 
       <div className="h-[1px] bg-border/50" />
 
-      {/* --- Matches Sections --- */}
+      {/* --- RECENT MATCHES --- */}
       <div className="space-y-8">
         {liveMatches.length > 0 && (
           <section className="space-y-4">

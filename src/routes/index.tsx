@@ -15,8 +15,8 @@ import CreateMatchPage from "@/pages/matches/CreateMatchPage";
 import LiveScorePage from "@/pages/public/LiveScorePage";
 import LiveScoringPage from "@/pages/scoring/LiveScoringPage";
 import ScorecardPage from "@/pages/matches/ScorecardPage";
+import MyMatchesPage from "@/pages/matches/MyMatchesPage";
 import ProfilePage from "@/pages/ProfilePage";
-import TeamsPage from "@/pages/TeamsPage";
 import NotFoundPage from "@/pages/NotFoundPage";
 
 export function AppRoutes() {
@@ -42,8 +42,8 @@ export function AppRoutes() {
           <Route element={<MainLayout />}>
             <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/matches/create" element={<CreateMatchPage />} />
+            <Route path="/my-matches" element={<MyMatchesPage />} />
             <Route path="/profile" element={<ProfilePage />} />
-            <Route path="/teams" element={<TeamsPage />} />
           </Route>
           <Route element={<ScoringLayout />}>
             <Route path="/matches/:id/score" element={<LiveScoringPage />} />

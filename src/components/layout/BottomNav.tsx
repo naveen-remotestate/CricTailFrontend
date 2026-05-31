@@ -9,12 +9,14 @@ export function BottomNav() {
 
   const navItems = [
     { to: "/", icon: Home, label: "Home" },
-    { to: "/teams", icon: Trophy, label: "Teams" },
     ...(isAuthenticated ? [
-      { to: "/matches/create", icon: PlusCircle, label: "New Match" },
-      { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
+      { to: "/my-matches", icon: Trophy, label: "Matches" },
+      { to: "/matches/create", icon: PlusCircle, label: "New" },
+      { to: "/dashboard", icon: LayoutDashboard, label: "Stats" },
       { to: "/profile", icon: User, label: "Profile" },
-    ] : []),
+    ] : [
+      { to: "/login", icon: User, label: "Login" }
+    ]),
   ];
 
   return (

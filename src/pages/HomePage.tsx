@@ -63,7 +63,7 @@ export default function HomePage() {
               animate={{ y: 0, opacity: 1 }}
               className="text-4xl font-black tracking-tight sm:text-6xl"
             >
-              Cric<span className="text-primary">Tail</span>
+              Cric<span className="text-primary">Tale</span>
             </motion.h1>
             
             <motion.p
@@ -202,17 +202,17 @@ export default function HomePage() {
           </div>
           
           <div className="grid gap-3 sm:grid-cols-2">
-            <Link to="/teams">
+            <Link to="/my-matches">
               <motion.div
                 whileHover={{ x: 5 }}
                 className="group p-4 rounded-[2rem] bg-card border border-border shadow-sm flex items-center gap-4 transition-all hover:border-primary/30"
               >
                 <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center shrink-0 group-hover:bg-primary group-hover:text-white transition-colors">
-                  <Users className="h-6 w-6" />
+                  <Trophy className="h-6 w-6" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-sm font-black uppercase tracking-tight">Squad Builder</p>
-                  <p className="text-[11px] text-muted-foreground line-clamp-1">Build and manage your team rosters.</p>
+                  <p className="text-sm font-black uppercase tracking-tight">My Matches</p>
+                  <p className="text-[11px] text-muted-foreground line-clamp-1">View and manage matches you've hosted.</p>
                 </div>
               </motion.div>
             </Link>
@@ -333,7 +333,7 @@ export default function HomePage() {
               </div>
               
               <div className="p-4 bg-muted/10 text-center border-t">
-                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">CricTail Real-time Broadcast</p>
+                 <p className="text-[9px] font-bold text-muted-foreground uppercase tracking-[0.2em]">CricTale Real-time Broadcast</p>
               </div>
             </motion.div>
           </div>

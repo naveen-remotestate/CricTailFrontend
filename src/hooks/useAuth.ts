@@ -1,6 +1,7 @@
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { useAuthStore } from "@/store/authStore";
 import { authService } from "@/services/api/authService";
+import { playerService } from "@/services/api/playerService";
 import type { User } from "@/types";
 import { formatPlayerName } from "@/lib/utils";
 
@@ -119,5 +120,29 @@ export function useLogout() {
     onSuccess: () => {
       logout();
     },
+  });
+}
+
+export function useProfile() {
+  const { user, setUser, isAuthenticated } = useAuthStore();
+
+  return useQuery({
+    queryKey: ["profile", user?.user_id],
+    queryFn: async () => {
+      if (!user) return null;
+      
+      // We search for ourselves to get the latest full_name
+      const data = await playerService.getPlayers(user.mobile_number);
+      const players = data.players || [];
+      const me = players.find((p: any) => p.user_id === user.user_id);
+      
+      if (me && me.full_name !== user.full_name) {
+        setUser({ ...user, full_name: me.full_name });
+      }
+      return me;
+    },
+    enabled: isAuthenticated && !!user,
+    staleTime: 1000 * 60 * 5, // 5 minutes
+    refetchOnWindowFocus: true,
   });
 }

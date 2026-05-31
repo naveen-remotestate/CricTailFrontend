@@ -1,7 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useAuthStore } from "@/store/authStore";
 import { useThemeStore } from "@/store/themeStore";
-import { useLogout } from "@/hooks/useAuth";
+import { useLogout, useProfile } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { formatPlayerName } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
@@ -25,6 +25,9 @@ export function Navbar() {
   const logout = useLogout();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Sync profile data with API
+  useProfile();
 
   // Close menu when navigating
   useEffect(() => {
@@ -53,7 +56,7 @@ export function Navbar() {
                 <path d="M12 22a10 10 0 0 0 10-10" strokeLinecap="round" />
               </svg>
             </div>
-            <span className="text-lg font-bold">CricTail</span>
+            <span className="text-lg font-bold">CricTale</span>
           </Link>
 
           {/* Desktop Nav */}
@@ -65,19 +68,21 @@ export function Navbar() {
               </Link>
             </Button>
             {isAuthenticated && (
-              <Button variant="ghost" size="sm" asChild>
-                <Link to="/dashboard" className="gap-2">
-                  <LayoutDashboard className="h-4 w-4" />
-                  Dashboard
-                </Link>
-              </Button>
+              <>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/dashboard" className="gap-2">
+                    <LayoutDashboard className="h-4 w-4" />
+                    Dashboard
+                  </Link>
+                </Button>
+                <Button variant="ghost" size="sm" asChild>
+                  <Link to="/my-matches" className="gap-2">
+                    <Trophy className="h-4 w-4" />
+                    My Matches
+                  </Link>
+                </Button>
+              </>
             )}
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/teams" className="gap-2">
-                <Trophy className="h-4 w-4" />
-                Teams
-              </Link>
-            </Button>
           </nav>
 
           <div className="flex items-center gap-2">
@@ -175,14 +180,15 @@ export function Navbar() {
                 </Button>
                 
                 {isAuthenticated && (
-                  <Button variant="ghost" className="w-full justify-start font-bold" asChild onClick={() => setMobileMenuOpen(false)}>
-                    <Link to="/dashboard" className="gap-3"><LayoutDashboard className="h-5 w-5 text-primary" /> Dashboard</Link>
-                  </Button>
+                  <>
+                    <Button variant="ghost" className="w-full justify-start font-bold" asChild onClick={() => setMobileMenuOpen(false)}>
+                      <Link to="/dashboard" className="gap-3"><LayoutDashboard className="h-5 w-5 text-primary" /> Dashboard</Link>
+                    </Button>
+                    <Button variant="ghost" className="w-full justify-start font-bold" asChild onClick={() => setMobileMenuOpen(false)}>
+                      <Link to="/my-matches" className="gap-3"><Trophy className="h-5 w-5 text-primary" /> My Matches</Link>
+                    </Button>
+                  </>
                 )}
-                
-                <Button variant="ghost" className="w-full justify-start font-bold" asChild onClick={() => setMobileMenuOpen(false)}>
-                  <Link to="/teams" className="gap-3"><Trophy className="h-5 w-5 text-primary" /> Teams</Link>
-                </Button>
                 
                 <div className="h-[1px] bg-border my-2" />
                 

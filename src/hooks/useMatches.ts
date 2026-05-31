@@ -25,6 +25,8 @@ export function useMatch(id: string) {
       return data.match;
     },
     enabled: !!id,
+    refetchInterval: 3000, // Sync every 3 seconds for active scoring
+    refetchOnWindowFocus: true,
   });
 }
 

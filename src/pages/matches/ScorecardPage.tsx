@@ -120,7 +120,7 @@ export default function ScorecardPage() {
                         <tr key={card.id} className="border-b border-border/50">
                           <td className="py-2">{formatPlayerName(card.user?.full_name)}</td>
                           <td className="py-2 text-right">{formatOvers(card.legal_balls)}</td>
-                          <td className="py-2 text-right">{card.maidens}</td>
+                          <td className="py-2 text-right">{card.maidens || 0}</td>
                           <td className="py-2 text-right">{card.runs_conceded}</td>
                           <td className="py-2 text-right font-medium">{card.wickets}</td>
                           <td className="py-2 text-right text-muted-foreground">
