@@ -20,10 +20,11 @@ import {
   X,
   ChevronRight,
   ChevronLeft,
-  History,
   Medal,
   ArrowLeft,
   Share2,
+  Activity,
+  History,
 } from "lucide-react";
 import type { User, LiveMatchState } from "@/types";
 import { formatOvers, formatPlayerName, cn, calculateRunRate } from "@/lib/utils";
@@ -42,16 +43,17 @@ interface BallResult {
 }
 
 interface SessionBallEvent {
-  runs: number;
-  isWicket: boolean;
-  extraType?: string | null;
-  totalRuns: number;
-  overNo: number;
-  ballInOver: number;
-  strikerName?: string;
-  bowlerName?: string;
-  wicketType?: string;
-  fielderName?: string;
+  runs_off_bat: number;
+  extra_runs: number;
+  is_wicket: boolean;
+  extra_type?: string | null;
+  total_runs: number;
+  over_no: number;
+  ball_in_over: number;
+  striker_name?: string;
+  bowler_name?: string;
+  wicket_type?: string;
+  dismissed_by_fielder_name?: string;
 }
 
 export default function LiveScoringPage() {
@@ -86,13 +88,20 @@ export default function LiveScoringPage() {
   const [setupStep, setSetupStep] = useState<'striker' | 'nonstriker' | 'bowler' | 'ready'>('striker');
   const [sessionEvents, setSessionEvents] = useState<SessionBallEvent[]>([]);
 
-  // Sync sessionEvents with apiBallEvents
   useEffect(() => {
     if (apiBallEvents) {
       setSessionEvents(apiBallEvents.map((b: any) => ({
-        runs: b.extra_type === "WIDE" || b.extra_type === "BYE" || b.extra_type === "LEG_BYE" ? b.extra_runs : b.runs_off_bat,
-        isWicket: b.is_wicket, extraType: b.extra_type, totalRuns: b.total_runs, overNo: b.over_no, ballInOver: b.ball_in_over,
-        strikerName: b.striker_name, bowlerName: b.bowler_name, wicketType: b.wicket_type, fielderName: b.dismissed_by_fielder_name
+        runs_off_bat: b.runs_off_bat,
+        extra_runs: b.extra_runs,
+        is_wicket: b.is_wicket, 
+        extra_type: b.extra_type, 
+        total_runs: b.total_runs, 
+        over_no: b.over_no, 
+        ball_in_over: b.ball_in_over,
+        striker_name: b.striker_name, 
+        bowler_name: b.bowler_name, 
+        wicket_type: b.wicket_type, 
+        dismissed_by_fielder_name: b.dismissed_by_fielder_name
       })));
     } else setSessionEvents([]);
   }, [apiBallEvents]);
@@ -306,58 +315,183 @@ export default function LiveScoringPage() {
               ))}
             </div>
             <Card className="rounded-[2rem] border border-border bg-card shadow-sm overflow-hidden"><CardContent className="p-5 flex items-center justify-between"><div className="flex items-center gap-4"><div className="h-12 w-12 rounded-2xl bg-blue-500/10 border-2 border-blue-500/20 flex items-center justify-center text-blue-600 font-black text-lg">{match.bowler_name?.charAt(0).toUpperCase() || "?"}</div><div><p className="text-sm font-black uppercase tracking-tight">{formatPlayerName(match.bowler_name) || "Waiting..."}</p><p className="text-[9px] font-black text-blue-600/60 uppercase tracking-widest">Active Bowler</p></div></div><div className="text-right"><p className="text-2xl font-black text-blue-600 leading-none">{match.bowler_wickets || 0}/{match.bowler_runs_given || 0}</p><p className="text-[10px] font-black text-muted-foreground mt-2 uppercase tracking-tighter">{formatOvers(match.bowler_legal_balls || 0)} OVS | Econ {calculateRunRate(match.bowler_runs_given || 0, match.bowler_legal_balls || 0)}</p></div></CardContent></Card>
-            <div className="bg-card rounded-[2rem] p-5 border border-border shadow-sm">
-              <div className="flex items-center justify-between mb-4 px-1"><div className="flex items-center gap-2"><History className="h-4 w-4 text-muted-foreground/40" /><span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Recent Balls</span>{isFreeHit && <motion.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-[8px] font-black uppercase tracking-[0.2em] animate-pulse">Free Hit</motion.span>}</div><span className="text-[10px] font-black uppercase text-primary">Over {currentOverDisplayNo}</span></div>
-              <div className="flex flex-nowrap justify-center gap-1 sm:gap-1.5 items-center w-full overflow-hidden py-2 px-1">
-                {(() => {
-                  const ballsInThisOver = sessionEvents.filter(b => b.overNo === (activeOverNo + 1));
-                  const legalBallsInThisOver = ballsInThisOver.filter(b => !b.extraType || (b.extraType !== 'WIDE' && b.extraType !== 'NO_BALL')).length;
-                  const placeholders = Math.max(0, 6 - legalBallsInThisOver);
-                  const totalItems = [...ballsInThisOver.map(b => ({ type: 'ball' as const, data: b })), ...Array(placeholders).fill(null).map((_, i) => ({ type: 'placeholder' as const, index: i }))];
-                  const sizeClass = totalItems.length > 10 ? "h-8 w-8 text-[7px]" : totalItems.length > 8 ? "h-9 w-9 text-[8px]" : "h-11 w-11 text-[10px]";
-                  return totalItems.map((item, idx) => {
-                    if (item.type === 'ball') {
-                      const ball = item.data!; let d = ""; let c = "border-muted bg-muted/20 text-muted-foreground";
-                      if (ball.isWicket) { 
-                        d = "W"; 
-                        if (ball.extraType === "WIDE") d = ball.runs > 0 ? `W+${ball.runs}wd` : "W+wd"; 
-                        else if (ball.extraType === "NO_BALL") d = ball.runs > 0 ? `W+${ball.runs}nb` : "W+nb";
-                        c = "border-red-500 bg-red-500/10 text-red-600"; 
-                      } else if (ball.extraType === "WIDE") { d = ball.runs > 0 ? `wd+${ball.runs}` : "wd"; c = "border-yellow-600 bg-yellow-500/10 text-yellow-700"; }
-                      else if (ball.extraType === "NO_BALL") { d = ball.runs > 0 ? `nb+${ball.runs}` : "nb"; c = "border-yellow-600 bg-yellow-500/10 text-yellow-700"; }
-                      else if (ball.extraType === "BYE" || ball.extraType === "LEG_BYE") { d = `${ball.runs}${ball.extraType === "BYE" ? 'b' : 'lb'}`; c = "border-blue-400 bg-blue-400/10 text-blue-600"; }
-                      else { d = ball.runs.toString(); if (ball.runs === 4) c = "border-primary bg-primary/10 text-primary"; else if (ball.runs === 6) c = "border-purple-600 bg-purple-500/10 text-purple-600"; }
-                      return <div key={`over-ball-${idx}-${ball.ballInOver}`} className={cn("rounded-full flex items-center justify-center font-black transition-all shadow-sm shrink-0 border-2", sizeClass, c)}>{d}</div>;
-                    }
-                    const isNext = idx === ballsInThisOver.length && legalBallsInThisOver < 6;
-                    return <div key={`over-placeholder-${idx}`} className={cn("rounded-full border-dashed border-2 flex items-center justify-center font-black transition-all shrink-0", sizeClass, isNext ? "border-primary bg-primary/5 text-primary scale-110 animate-pulse" : "border-muted text-muted-foreground/20")}>•</div>;
-                  });
-                })()}
-              </div>
-            </div>
-            <div className="bg-card rounded-[2rem] p-5 border border-border shadow-sm">
-              <div className="flex items-center gap-2 mb-4 px-1"><History className="h-4 w-4 text-primary" /><span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Match Feed</span></div>
-              <div className="space-y-0 max-h-60 overflow-y-auto scrollbar-hide px-1">
-                {sessionEvents.length === 0 ? <p className="text-[10px] text-muted-foreground italic text-center py-4 uppercase font-bold tracking-widest">No deliveries yet...</p> : (
-                  (() => {
-                    const reversedEvents = [...sessionEvents].reverse();
-                    return reversedEvents.slice(0, 15).map((ball, i) => {
-                      const isOverEnd = i < reversedEvents.length - 1 && ball.overNo !== reversedEvents[i+1].overNo;
+            <Card className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-4 px-1">
+                  <div className="flex items-center gap-2">
+                    <History className="h-4 w-4 text-muted-foreground/40" />
+                    <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Recent Balls</span>
+                    {isFreeHit && <motion.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-[8px] font-black uppercase tracking-[0.2em] animate-pulse">Free Hit</motion.span>}
+                  </div>
+                  <span className="text-[10px] font-black uppercase text-primary">Over {currentOverDisplayNo}</span>
+                </div>
+                <div className="flex flex-nowrap justify-center gap-1 sm:gap-1.5 items-center w-full overflow-hidden py-2 px-1">
+                  {(() => {
+                    const ballsInThisOver = sessionEvents.filter(b => b.over_no === (activeOverNo + 1));
+                    const legalBallsBowled = ballsInThisOver.filter(b => !b.extra_type || (b.extra_type !== 'WIDE' && b.extra_type !== 'NO_BALL')).length;
+                    const remainingLegalNeeded = Math.max(0, 6 - legalBallsBowled);
+
+                    const totalItems = [
+                      ...ballsInThisOver.map(b => ({ type: 'ball' as const, data: b })),
+                      ...Array(remainingLegalNeeded).fill(null).map((_, i) => ({ type: 'placeholder' as const, index: i }))
+                    ];
+
+                    const ballCount = totalItems.length;
+                    const sizeClass = ballCount > 10 ? "h-8 w-8 text-[7px] border" : 
+                                     ballCount > 8 ? "h-9 w-9 text-[8px] border-2" : 
+                                     ballCount > 6 ? "h-10 w-10 text-[9px] border-2" : 
+                                     "h-12 w-12 text-[10px] border-2";
+
+                    return totalItems.map((item, idx) => {
+                      if (item.type === 'ball') {
+                        const ball = item.data!; 
+                        let d = ""; 
+                        let c = "border-muted bg-muted/20 text-muted-foreground";
+
+                        if (ball.is_wicket) {
+                          d = "W";
+                          if (ball.extra_type === "WIDE") d = ball.extra_runs > 0 ? `W+${ball.extra_runs}wd` : "W+wd";
+                          else if (ball.extra_type === "NO_BALL") d = ball.runs_off_bat > 0 ? `W+${ball.runs_off_bat}nb` : "W+nb";
+                          c = "border-red-500 bg-red-500/10 text-red-600";
+                        } else if (ball.extra_type === "WIDE") {
+                          d = ball.extra_runs > 0 ? `wd+${ball.extra_runs}` : "wd";
+                          c = "border-yellow-600 bg-yellow-500/10 text-yellow-700";
+                        } else if (ball.extra_type === "NO_BALL") {
+                          d = ball.runs_off_bat > 0 ? `nb+${ball.runs_off_bat}` : "nb";
+                          c = "border-yellow-600 bg-yellow-500/10 text-yellow-700";
+                        } else if (ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE") {
+                          d = `${ball.extra_runs}${ball.extra_type === "BYE" ? 'b' : 'lb'}`;
+                          c = "border-blue-400 bg-blue-400/10 text-blue-600";
+                        } else {
+                          d = ball.runs_off_bat.toString();
+                          if (ball.runs_off_bat === 4) c = "border-primary bg-primary/10 text-primary";
+                          else if (ball.runs_off_bat === 6) c = "border-purple-600 bg-purple-500/10 text-purple-600";
+                        }
+
+                        return (
+                          <div 
+                            key={`over-ball-${idx}-${ball.ball_in_over}`} 
+                            className={cn("rounded-full flex items-center justify-center font-black transition-all shadow-sm shrink-0", sizeClass, c)}
+                          >
+                            {d}
+                          </div>
+                        );
+                      }
+                      const isNext = idx === ballsInThisOver.length && legalBallsBowled < 6;
                       return (
-                        <div key={`${ball.overNo}-${ball.ballInOver}-${i}`}>
-                          <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 py-3 border-b border-border/30 last:border-0 transition-colors">
-                            <div className="h-10 w-10 rounded-full border border-border bg-muted/10 flex items-center justify-center shrink-0"><span className="text-[10px] font-black text-muted-foreground italic leading-none">{ball.overNo}.{ball.ballInOver}</span></div>
-                            <div className="flex-1 min-w-0"><div className="flex flex-col"><div className="flex items-center justify-between mb-0.5"><p className="text-sm font-bold truncate">{formatPlayerName(ball.bowlerName)} to {formatPlayerName(ball.strikerName)}</p><div className={cn("px-2 py-0.5 rounded-full border font-black text-[9px] uppercase tracking-widest shadow-sm", ball.isWicket ? "border-red-500 bg-red-500/10 text-red-600" : ball.extraType === "WIDE" || ball.extraType === "NO_BALL" ? "border-yellow-600 bg-yellow-500/10 text-yellow-700" : ball.runs === 4 ? "border-primary bg-primary/10 text-primary" : ball.runs === 6 ? "border-purple-600 bg-purple-500/10 text-purple-600" : ball.extraType === "BYE" || ball.extraType === "LEG_BYE" ? "border-blue-400 bg-blue-400/10 text-blue-600" : "border-muted bg-muted/20 text-muted-foreground")}>{ball.isWicket ? "W" : ball.runs}</div></div>
-                            <p className="text-[9px] font-bold text-muted-foreground uppercase">{ball.wicketType || (ball.extraType ? ball.extraType : "Legal Delivery")}</p></div></div>
-                          </motion.div>
-                          {isOverEnd && <div className="py-3 flex items-center gap-2"><div className="h-[1px] flex-1 bg-border/40" /><span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary bg-primary/5 px-4 py-1 rounded-full border border-primary/10 shadow-sm">End of Over {reversedEvents[i+1].overNo}</span><div className="h-[1px] flex-1 bg-border/40" /></div>}
-                        </div>
+                        <div key={`over-placeholder-${idx}`} className={cn(
+                          "rounded-full border-dashed border-2 flex items-center justify-center font-black transition-all shrink-0", 
+                          sizeClass, 
+                          isNext ? "border-primary bg-primary/5 text-primary scale-110 animate-pulse" : "border-muted text-muted-foreground/20"
+                        )}>•</div>
                       );
                     });
-                  })()
-                )}
-              </div>
-            </div>
+                  })()}
+                </div>
+              </CardContent>
+            </Card>
+            <Card className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+              <CardContent className="p-3">
+                <div className="flex items-center gap-2 mb-3">
+                  <Activity className="h-4 w-4 text-primary" />
+                  <span className="text-sm font-semibold">Ball-by-Ball</span>
+                </div>
+                <div className="space-y-0 max-h-96 overflow-y-auto scrollbar-hide">
+                  {sessionEvents.length === 0 ? (
+                    <p className="text-xs text-muted-foreground italic text-center py-4">Live ball events appearing here...</p>
+                  ) : (
+                    (() => {
+                      const reversedEvents = [...sessionEvents].reverse();
+                      return reversedEvents.map((ball, i) => {
+                        const isOverEnd = i < reversedEvents.length - 1 && ball.over_no !== reversedEvents[i+1].over_no;
+                        return (
+                          <div key={i}>
+                            <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 py-3 px-2 border-b border-border/30 hover:bg-muted/5 transition-colors">
+                              <div className="h-10 w-10 rounded-full border border-border bg-muted/10 flex items-center justify-center shrink-0">
+                                <span className="text-[10px] font-black text-muted-foreground italic leading-none">{ball.over_no}.{ball.ball_in_over}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col">
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <p className="text-[11px] font-black uppercase tracking-tight leading-none text-foreground truncate">
+                                      {formatPlayerName(ball.bowler_name)} to {formatPlayerName(ball.striker_name)}
+                                    </p>
+                                    <div className={cn(
+                                      "px-2 py-0.5 rounded-full border font-black text-[9px] uppercase tracking-widest shadow-sm",
+                                      ball.is_wicket ? "border-red-500 bg-red-500/10 text-red-600" :
+                                      ball.extra_type === "WIDE" || ball.extra_type === "NO_BALL" ? "border-yellow-600 bg-yellow-500/10 text-yellow-700" :
+                                      ball.runs_off_bat === 4 ? "border-primary bg-primary/10 text-primary" :
+                                      ball.runs_off_bat === 6 ? "border-purple-600 bg-purple-500/10 text-purple-600" :
+                                      ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE" ? "border-blue-400 bg-blue-400/10 text-blue-600" :
+                                      "border-muted bg-muted/20 text-muted-foreground"
+                                    )}>
+                                      {(() => {
+                                        if (ball.is_wicket) return "W";
+                                        if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `wd+${ball.extra_runs}` : "wd";
+                                        if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `nb+${ball.runs_off_bat}` : "nb";
+                                        if (ball.extra_type === "BYE") return ball.extra_runs > 0 ? `${ball.extra_runs}b` : "b";
+                                        if (ball.extra_type === "LEG_BYE") return ball.extra_runs > 0 ? `${ball.extra_runs}lb` : "lb";
+                                        return ball.runs_off_bat;
+                                      })()}
+                                    </div>
+                                  </div>
+                                  <div className="text-[10px] font-medium text-muted-foreground flex items-center gap-2">
+                                    {ball.is_wicket ? (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-red-500 font-black uppercase italic tracking-widest text-[9px]">
+                                          OUT! {ball.wicket_type?.replace("_", " ")} {ball.dismissed_by_fielder_name ? `(${formatPlayerName(ball.dismissed_by_fielder_name)})` : ""}
+                                        </span>
+                                        {ball.extra_type && (
+                                          <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
+                                            {(() => {
+                                              if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `${ball.extra_runs} ` : "";
+                                              if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `${ball.runs_off_bat} ` : "";
+                                              if (ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE") return ball.extra_runs > 0 ? `${ball.extra_runs} ` : "";
+                                              return "";
+                                            })()}
+                                            {ball.extra_type}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-foreground/80 uppercase">
+                                          {ball.runs_off_bat === 4 ? "FOUR RUNS" : ball.runs_off_bat === 6 ? "SIXER!" : ball.runs_off_bat === 0 && !ball.extra_type ? "no run" : `${ball.runs_off_bat} run${ball.runs_off_bat !== 1 ? 's' : ''}`}
+                                        </span>
+                                        {ball.extra_type && (
+                                          <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
+                                            {(() => {
+                                              if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `${ball.extra_runs} ` : "";
+                                              if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `${ball.runs_off_bat} ` : "";
+                                              if (ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE") return ball.extra_runs > 0 ? `${ball.extra_runs} ` : "";
+                                              return "";
+                                            })()}
+                                            {ball.extra_type}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            </motion.div>
+                            {isOverEnd && (
+                              <div className="py-3 flex items-center gap-2">
+                                <div className="h-[1px] flex-1 bg-border/40" />
+                                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-primary bg-primary/5 px-4 py-1 rounded-full border border-primary/10 shadow-sm">
+                                  End of Over {reversedEvents[i+1].over_no}
+                                </span>
+                                <div className="h-[1px] flex-1 bg-border/40" />
+                              </div>
+                            )}
+                          </div>
+                        );
+                      });
+                    })()
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
       </div>
