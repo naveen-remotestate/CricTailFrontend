@@ -76,6 +76,7 @@ export default function LiveScoringPage() {
   const [showExtraModal, setShowExtraModal] = useState(false);
   const [showFielderModal, setShowFielderModal] = useState(false);
   const [showRunOutDismissedModal, setShowRunOutDismissedModal] = useState(false);
+  const [showRunOutRunsModal, setShowRunOutRunsModal] = useState(false);
   const [showRetiredHurtModal, setShowRetiredHurtModal] = useState(false);
   const [pendingExtraType, setPendingExtraType] = useState<"WIDE" | "NO_BALL" | "BYE" | "LEG_BYE" | null>(null);
   const [isFreeHit, setIsFreeHit] = useState(false);
@@ -224,7 +225,11 @@ export default function LiveScoringPage() {
     } else if (type === "CAUGHT" || type === "STUMPED") {
       setPendingBall({ ...uB, dismissedPlayerId: match.striker_id || undefined }); setShowFielderModal(true);
     } else if (type === "RUN_OUT") {
-      setShowRunOutDismissedModal(true);
+      if (!updatedBall.extraType && updatedBall.runs === 0) {
+        setShowRunOutRunsModal(true);
+      } else {
+        setShowRunOutDismissedModal(true);
+      }
     }
   };
 
@@ -232,6 +237,14 @@ export default function LiveScoringPage() {
     if (!pendingBall) return;
     const uB = { ...pendingBall, dismissedPlayerId: pId };
     setPendingBall(uB); setShowRunOutDismissedModal(false); setShowFielderModal(true);
+  };
+
+  const handleRunOutRuns = (runs: number) => {
+    if (!pendingBall) return;
+    const uB = { ...pendingBall, runs };
+    setPendingBall(uB);
+    setShowRunOutRunsModal(false);
+    setShowRunOutDismissedModal(true);
   };
 
   const handleFielderSelection = (fId: string) => {
@@ -352,6 +365,7 @@ export default function LiveScoringPage() {
                           d = "W";
                           if (ball.extra_type === "WIDE") d = ball.extra_runs > 0 ? `W+${ball.extra_runs}wd` : "W+wd";
                           else if (ball.extra_type === "NO_BALL") d = ball.runs_off_bat > 0 ? `W+${ball.runs_off_bat}nb` : "W+nb";
+                          else if (ball.runs_off_bat > 0) d = `W+${ball.runs_off_bat}`;
                           c = "border-red-500 bg-red-500/10 text-red-600";
                         } else if (ball.extra_type === "WIDE") {
                           d = ball.extra_runs > 0 ? `wd+${ball.extra_runs}` : "wd";
@@ -542,7 +556,12 @@ export default function LiveScoringPage() {
         )}
         {showExtraModal && (
           <div className="fixed inset-0 z-[140] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full max-w-sm bg-card rounded-[3rem] border shadow-2xl p-8"><div className="flex justify-between items-center mb-6"><h3 className="text-2xl font-black uppercase tracking-tighter italic">{pendingExtraType} RUNS</h3><Button variant="ghost" size="icon" onClick={() => setShowExtraModal(false)}><X className="h-6 w-6" /></Button></div><p className="text-[10px] font-black text-muted-foreground uppercase mb-6 tracking-widest text-center opacity-60 italic">Select runs taken by batsmen</p><div className="grid grid-cols-3 gap-3">{[0, 1, 2, 3, 4, 6].map((r) => <div key={r} className="space-y-2"><Button variant="outline" className="w-full h-16 rounded-2xl font-black text-lg" onClick={() => handleExtraRuns(r)}>{r}</Button>{pendingExtraType === "WIDE" && <Button variant="ghost" className="w-full h-8 rounded-xl text-[8px] font-black uppercase text-red-500 bg-red-500/5" onClick={() => handleExtraRuns(r, true)}>+ Wicket</Button>}</div>)}</div></motion.div>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full max-w-sm bg-card rounded-[3rem] border shadow-2xl p-8"><div className="flex justify-between items-center mb-6"><h3 className="text-2xl font-black uppercase tracking-tighter italic">{pendingExtraType} RUNS</h3><Button variant="ghost" size="icon" onClick={() => setShowExtraModal(false)}><X className="h-6 w-6" /></Button></div><p className="text-[10px] font-black text-muted-foreground uppercase mb-6 tracking-widest text-center opacity-60 italic">Select runs taken by batsmen</p><div className="grid grid-cols-3 gap-3">{[0, 1, 2, 3, 4, 6].map((r) => <div key={r} className="space-y-2"><Button variant="outline" className="w-full h-16 rounded-2xl font-black text-lg" onClick={() => handleExtraRuns(r)}>{r}</Button>{(pendingExtraType === "WIDE" || pendingExtraType === "NO_BALL") && <Button variant="ghost" className="w-full h-8 rounded-xl text-[8px] font-black uppercase text-red-500 bg-red-500/5" onClick={() => handleExtraRuns(r, true)}>+ Wicket</Button>}</div>)}</div></motion.div>
+          </div>
+        )}
+        {showRunOutRunsModal && (
+          <div className="fixed inset-0 z-[145] flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="w-full max-w-sm bg-card rounded-[3rem] border shadow-2xl p-8"><div className="flex justify-between items-center mb-6"><h3 className="text-2xl font-black uppercase tracking-tighter italic">Runs Completed</h3><Button variant="ghost" size="icon" onClick={() => { setShowRunOutRunsModal(false); setPendingBall(null); }}><X className="h-6 w-6" /></Button></div><p className="text-[10px] font-black text-muted-foreground uppercase mb-6 tracking-widest text-center opacity-60 italic">How many runs were completed before Run Out?</p><div className="grid grid-cols-3 gap-3">{[0, 1, 2, 3].map((r) => <Button key={r} variant="outline" className="h-16 rounded-2xl font-black text-lg" onClick={() => handleRunOutRuns(r)}>{r}</Button>)}</div></motion.div>
           </div>
         )}
       </AnimatePresence>

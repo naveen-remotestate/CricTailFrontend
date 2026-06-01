@@ -203,7 +203,7 @@ export default function ScorecardPage() {
           <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
             <span>{match.overs} Overs</span>
             <span className="opacity-30">•</span>
-            <span>{new Date(match.created_at).toLocaleDateString()}</span>
+            <span>{match.start_time ? new Date(match.start_time).toLocaleDateString() : "Live"}</span>
           </div>
           
           {match.winner_team_id && (
