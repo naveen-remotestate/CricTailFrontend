@@ -325,7 +325,7 @@ export default function LiveScoringPage() {
                   </div>
                   <span className="text-[10px] font-black uppercase text-primary">Over {currentOverDisplayNo}</span>
                 </div>
-                <div className="flex flex-nowrap justify-center gap-1 sm:gap-1.5 items-center w-full overflow-hidden py-2 px-1">
+                <div className="flex flex-nowrap justify-start gap-1 sm:gap-1.5 items-center w-full overflow-x-auto scrollbar-hide py-2 px-1">
                   {(() => {
                     const ballsInThisOver = sessionEvents.filter(b => b.over_no === (activeOverNo + 1));
                     const legalBallsBowled = ballsInThisOver.filter(b => !b.extra_type || (b.extra_type !== 'WIDE' && b.extra_type !== 'NO_BALL')).length;
