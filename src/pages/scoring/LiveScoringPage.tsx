@@ -24,7 +24,6 @@ import {
   Medal,
   ArrowLeft,
   Share2,
-  Activity
 } from "lucide-react";
 import type { User, LiveMatchState } from "@/types";
 import { formatOvers, formatPlayerName, cn, calculateRunRate } from "@/lib/utils";
@@ -87,7 +86,7 @@ export default function LiveScoringPage() {
   const [setupStep, setSetupStep] = useState<'striker' | 'nonstriker' | 'bowler' | 'ready'>('striker');
   const [sessionEvents, setSessionEvents] = useState<SessionBallEvent[]>([]);
 
-  // Effects
+  // Sync sessionEvents with apiBallEvents
   useEffect(() => {
     if (apiBallEvents) {
       setSessionEvents(apiBallEvents.map((b: any) => ({
@@ -100,7 +99,6 @@ export default function LiveScoringPage() {
 
   useEffect(() => { setSessionEvents([]); }, [match?.current_inning_id]);
 
-  // Logic placeholders
   const syncData = useCallback(async () => {
     queryClient.invalidateQueries({ queryKey: ["match", id] });
     queryClient.invalidateQueries({ queryKey: ["scorecard", id] });
@@ -134,7 +132,26 @@ export default function LiveScoringPage() {
 
   const allBattingUsers = getSquad('batting');
   const allBowlingUsers = getSquad('bowling');
-  const outPlayerIds = scorecard?.first_innings?.batting?.filter(s => s.is_out).map(s => s.user_id) || [];
+  const currentInningsData = match?.current_innings_no === 1 ? scorecard?.first_innings : scorecard?.second_innings;
+  const outPlayerIds = currentInningsData?.batting?.filter(s => s.is_out).map(s => s.user_id) || [];
+
+  const checkInningsEnd = useCallback((result: BallResult) => {
+    if (!match) return false;
+    const isWideOrNB = result.extraType === "WIDE" || result.extraType === "NO_BALL";
+    const curL = match.legal_balls || 0;
+    const curW = outPlayerIds.length + (result.isWicket ? 1 : 0);
+    const maxW = allBattingUsers.length - 1;
+    
+    const isAllOut = curW >= maxW;
+    const isOversCompleted = !isWideOrNB && (curL + 1) >= (match.overs * 6);
+    
+    const isSecondInnings = match.current_innings_no === 2;
+    const penalty = isWideOrNB ? 1 : 0;
+    const runsOnBall = result.runs + penalty;
+    const isTargetChased = isSecondInnings && ((match.current_total_runs || 0) + runsOnBall) > (scorecard?.first_innings?.total_runs || 0);
+
+    return isAllOut || isOversCompleted || isTargetChased;
+  }, [match, outPlayerIds, allBattingUsers, scorecard]);
 
   const handleScore = useCallback(async (result: BallResult, nextBatId?: string, nextBowlId?: string) => {
     if (!match) return;
@@ -147,7 +164,9 @@ export default function LiveScoringPage() {
 
       const payload = {
         match_id: id || "",
+        // Correct Mapping: Wides/Byes/LegByes = 0 Bat Runs. NoBalls = Bat Runs.
         runs_off_bat: (isWide || isBye || isLegBye) ? 0 : result.runs,
+        // Correct Mapping: Wides/Byes/LegByes = Extra Runs. NoBalls = 0 (Backend adds penalty).
         extra_runs: (isWide || isBye || isLegBye) ? result.runs : 0,
         extra_type: result.extraType || null,
         is_wicket: result.isWicket || false,
@@ -165,43 +184,36 @@ export default function LiveScoringPage() {
       setShowWicketModal(false); setShowNewBatsmanModal(false); setShowNewBowlerModal(false); setShowExtraModal(false); setShowFielderModal(false); setShowRunOutDismissedModal(false); setPendingBall(null); setTempNextBatsmanId(null);
       await syncData();
       toast.success("Ball recorded!");
-    } catch (error: any) { toast.error("Failed to record ball"); } finally { setIsProcessing(false); }
+    } catch (error: any) { 
+      toast.error(error.response?.data?.error || "Failed to record ball"); 
+    } finally { setIsProcessing(false); }
   }, [id, match, scoreBall, syncData]);
 
   const onScoreClick = (result: BallResult) => {
     if (!match) return;
     setPendingBall(result);
     if (result.isWicket) { setShowWicketModal(true); return; }
-    const curL = match?.legal_balls || 0;
-    const isOE = !result.isWide && !result.isNoBall && (curL + 1) % 6 === 0;
-    const isOC = isOE && (Math.floor(curL / 6) + 1) >= (match?.overs || 0);
-    const is2nd = match?.current_innings_no === 2;
-    const curR = match?.current_total_runs || 0;
-    const rTB = (result.isWide || result.extraType === "BYE" || result.extraType === "LEG_BYE") ? result.runs : (result.isNoBall ? (result.runs + 1) : result.runs);
-    const isTC = is2nd && (curR + rTB) > (scorecard?.first_innings?.total_runs || 0);
-    const willE = isOC || isTC;
-    if (isOE && !willE) { setShowNewBowlerModal(true); return; }
+    
+    const willEnd = checkInningsEnd(result);
+    // Corrected Parentheses for Precedence:
+    const isOverEnding = (!result.extraType || (result.extraType !== "WIDE" && result.extraType !== "NO_BALL")) && ((match.legal_balls + 1) % 6 === 0);
+    
+    if (isOverEnding && !willEnd) { setShowNewBowlerModal(true); return; }
     handleScore(result);
   };
 
   const handleWicketType = (type: string) => {
     if (!pendingBall || !match) return;
     setShowWicketModal(false);
-    const updatedBall = { ...pendingBall, isWicket: true, wicketType: type };
-    setPendingBall(updatedBall);
+    const uB = { ...pendingBall, isWicket: true, wicketType: type };
+    setPendingBall(uB);
 
-    const curL = match.legal_balls || 0;
-    const isOE = !updatedBall.isWide && !updatedBall.isNoBall && (curL + 1) % 6 === 0;
-    const isAll = outPlayerIds.length + 1 >= (allBattingUsers.length - 1);
-    const isOC = isOE && (Math.floor(curL / 6) + 1) >= (match.overs || 0);
-    const isTC = (match.current_innings_no === 2) && ((match.current_total_runs || 0) + (updatedBall.runs + (updatedBall.isNoBall || updatedBall.isWide ? 1 : 0))) > (scorecard?.first_innings?.total_runs || 0);
-    const willE = isAll || isOC || isTC;
-
+    const willEnd = checkInningsEnd(uB);
     if (type === "BOWLED" || type === "LBW" || type === "HIT_WICKET") {
-      const bwD = { ...updatedBall, dismissedPlayerId: match.striker_id || undefined };
-      if (willE) handleScore(bwD, ""); else { setPendingBall(bwD); setShowNewBatsmanModal(true); }
+      const bwD = { ...uB, dismissedPlayerId: match.striker_id || undefined };
+      if (willEnd) handleScore(bwD, ""); else { setPendingBall(bwD); setShowNewBatsmanModal(true); }
     } else if (type === "CAUGHT" || type === "STUMPED") {
-      setPendingBall({ ...updatedBall, dismissedPlayerId: match.striker_id || undefined }); setShowFielderModal(true);
+      setPendingBall({ ...uB, dismissedPlayerId: match.striker_id || undefined }); setShowFielderModal(true);
     } else if (type === "RUN_OUT") {
       setShowRunOutDismissedModal(true);
     }
@@ -209,39 +221,32 @@ export default function LiveScoringPage() {
 
   const handleRunOutDismissed = (pId: string) => {
     if (!pendingBall) return;
-    setPendingBall({ ...pendingBall, dismissedPlayerId: pId }); setShowRunOutDismissedModal(false); setShowFielderModal(true);
+    const uB = { ...pendingBall, dismissedPlayerId: pId };
+    setPendingBall(uB); setShowRunOutDismissedModal(false); setShowFielderModal(true);
   };
 
   const handleFielderSelection = (fId: string) => {
     if (!pendingBall || !match) return;
     const uB = { ...pendingBall, dismissedByFielderId: fId };
     setShowFielderModal(false);
-    const isAll = outPlayerIds.length + 1 >= (allBattingUsers.length - 1);
-    const isOE = !uB.isWide && !uB.isNoBall && (match.legal_balls + 1) % 6 === 0;
-    const isOC = isOE && (Math.floor(match.legal_balls / 6) + 1) >= (match.overs || 0);
-    const isTC = (match.current_innings_no === 2) && ((match.current_total_runs || 0) + uB.runs) > (scorecard?.first_innings?.total_runs || 0);
-    if (isAll || isOC || isTC) handleScore(uB, ""); else { setPendingBall(uB); setShowNewBatsmanModal(true); }
+    const willEnd = checkInningsEnd(uB);
+    if (willEnd) handleScore(uB, ""); else { setPendingBall(uB); setShowNewBatsmanModal(true); }
   };
 
   const handleRetiredHurt = (pId: string) => {
     if (!match) return;
     const rB: BallResult = { runs: 0, isWicket: true, wicketType: "RETIRED_HURT", dismissedPlayerId: pId };
     setShowRetiredHurtModal(false);
-    const isOE = (match.legal_balls + 1) % 6 === 0;
-    const isOC = isOE && (Math.floor(match.legal_balls / 6) + 1) >= (match.overs || 0);
-    const isTC = (match.current_innings_no === 2) && (match.current_total_runs || 0) > (scorecard?.first_innings?.total_runs || 0);
-    const isAll = allBattingUsers.filter(u => u.user_id !== match.striker_id && u.user_id !== match.non_striker_id && !outPlayerIds.includes(u.user_id)).length === 0;
-    if (isOC || isTC || isAll) handleScore(rB, "");
-    else { setPendingBall(rB); setShowNewBatsmanModal(true); }
+    const willEnd = checkInningsEnd(rB) || allBattingUsers.filter(u => u.user_id !== match.striker_id && u.user_id !== match.non_striker_id && !outPlayerIds.includes(u.user_id)).length === 0;
+    if (willEnd) handleScore(rB, ""); else { setPendingBall(rB); setShowNewBatsmanModal(true); }
   };
 
   const handleNextBatsmanSelection = (bId: string) => {
     if (!pendingBall || !match) return;
-    const isOE = !pendingBall.isWide && !pendingBall.isNoBall && (match.legal_balls + 1) % 6 === 0;
-    const isAll = outPlayerIds.length + (pendingBall.isWicket ? 1 : 0) >= (allBattingUsers.length - 1);
-    const isOC = isOE && (Math.floor(match.legal_balls / 6) + 1) >= (match.overs || 0);
-    const isTC = (match.current_innings_no === 2) && ((match.current_total_runs || 0) + pendingBall.runs) > (scorecard?.first_innings?.total_runs || 0);
-    if (isOE && !(isOC || isTC || isAll)) { setTempNextBatsmanId(bId); setShowNewBatsmanModal(false); setShowNewBowlerModal(true); }
+    const willEnd = checkInningsEnd(pendingBall);
+    const isOverEnding = (!pendingBall.extraType || (pendingBall.extraType !== "WIDE" && pendingBall.extraType !== "NO_BALL")) && ((match.legal_balls + 1) % 6 === 0);
+    
+    if (isOverEnding && !willEnd) { setTempNextBatsmanId(bId); setShowNewBatsmanModal(false); setShowNewBowlerModal(true); }
     else { setShowNewBatsmanModal(false); handleScore(pendingBall, bId); }
   };
 
@@ -249,7 +254,7 @@ export default function LiveScoringPage() {
 
   const handleExtraRuns = (runs: number, isWO = false) => {
     if (!pendingExtraType) return;
-    onScoreClick({ runs, isWide: pendingExtraType === "WIDE", isNoBall: pendingExtraType === "NO_BALL", extraType: (pendingExtraType === "BYE" || pendingExtraType === "LEG_BYE") ? pendingExtraType : pendingExtraType, isWicket: isWO });
+    onScoreClick({ runs, extraType: pendingExtraType, isWicket: isWO });
     setShowExtraModal(false); setPendingExtraType(null);
   };
 
@@ -264,14 +269,17 @@ export default function LiveScoringPage() {
 
   const handleSetupBack = () => { if (setupStep === 'ready') setSetupStep('bowler'); else if (setupStep === 'bowler') setSetupStep('nonstriker'); else if (setupStep === 'nonstriker') setSetupStep('striker'); else navigate(-1); };
 
-  if (matchLoading) return <div>Loading...</div>;
-  if (!match) return <div>Not Found</div>;
+  if (matchLoading) return <div className="min-h-screen bg-background flex flex-col p-4 space-y-4"><Skeleton className="h-32 w-full rounded-2xl" /><Skeleton className="h-[400px] w-full rounded-2xl" /></div>;
+  if (!match) return <div className="min-h-screen bg-background flex items-center justify-center p-4"><p className="text-muted-foreground font-bold uppercase tracking-widest">Match not found</p></div>;
 
   const currentLiveState: LiveMatchState = { match_id: match.match_id, total_runs: match.current_total_runs || 0, total_wickets: match.current_total_wickets || 0, legal_balls: match.legal_balls || 0, updated_at: new Date().toISOString() };
   const activeOverNo = Math.floor((match?.legal_balls || 0) / 6);
+  const currentOverDisplayNo = activeOverNo + 1;
+  const remainingBatsmen = allBattingUsers.filter(u => u.user_id !== match.striker_id && u.user_id !== match.non_striker_id && !outPlayerIds.includes(u.user_id));
+  const otherBowlers = allBowlingUsers.filter(u => u.user_id !== match.bowler_id);
 
   return (
-    <div className="h-[calc(100vh-64px)] flex flex-col overflow-hidden">
+    <div className="h-[calc(100vh-64px)] bg-background flex flex-col overflow-hidden">
       <div className="flex-none z-40 border-b shadow-md">
         <div className="bg-background/95 backdrop-blur-lg"><div className="mx-auto max-w-7xl px-4 py-3 flex items-center justify-between"><button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground font-black uppercase italic"><ArrowLeft className="h-4 w-4" /> Back</button><div className="flex items-center gap-2"><Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-primary/20 text-primary" onClick={handleShareMatch}><Share2 className="h-3.5 w-3.5" /></Button><div className="h-4 w-[1px] bg-border mx-1" /><div className="live-indicator relative h-2 w-2 rounded-full bg-red-500" /><span className="text-[10px] font-black uppercase text-red-500 italic">Scoring</span></div></div></div>
         <ScoreHeader match={match} liveState={currentLiveState} firstInningsSummary={scorecard?.first_innings ? { runs: scorecard.first_innings.total_runs, wickets: scorecard.first_innings.total_wickets, legal_balls: scorecard.first_innings.legal_balls } : undefined} />
@@ -299,15 +307,14 @@ export default function LiveScoringPage() {
             </div>
             <Card className="rounded-[2rem] border border-border bg-card shadow-sm overflow-hidden"><CardContent className="p-5 flex items-center justify-between"><div className="flex items-center gap-4"><div className="h-12 w-12 rounded-2xl bg-blue-500/10 border-2 border-blue-500/20 flex items-center justify-center text-blue-600 font-black text-lg">{match.bowler_name?.charAt(0).toUpperCase() || "?"}</div><div><p className="text-sm font-black uppercase tracking-tight">{formatPlayerName(match.bowler_name) || "Waiting..."}</p><p className="text-[9px] font-black text-blue-600/60 uppercase tracking-widest">Active Bowler</p></div></div><div className="text-right"><p className="text-2xl font-black text-blue-600 leading-none">{match.bowler_wickets || 0}/{match.bowler_runs_given || 0}</p><p className="text-[10px] font-black text-muted-foreground mt-2 uppercase tracking-tighter">{formatOvers(match.bowler_legal_balls || 0)} OVS | Econ {calculateRunRate(match.bowler_runs_given || 0, match.bowler_legal_balls || 0)}</p></div></CardContent></Card>
             <div className="bg-card rounded-[2rem] p-5 border border-border shadow-sm">
-              <div className="flex items-center justify-between mb-4 px-1"><div className="flex items-center gap-2"><History className="h-4 w-4 text-muted-foreground/40" /><span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Recent Balls</span>{isFreeHit && <motion.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-[8px] font-black uppercase tracking-[0.2em] animate-pulse">Free Hit</motion.span>}</div><span className="text-[10px] font-black uppercase text-primary">Over {activeOverNo + 1}</span></div>
+              <div className="flex items-center justify-between mb-4 px-1"><div className="flex items-center gap-2"><History className="h-4 w-4 text-muted-foreground/40" /><span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Recent Balls</span>{isFreeHit && <motion.span initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="ml-2 px-2 py-0.5 rounded-full bg-red-500 text-white text-[8px] font-black uppercase tracking-[0.2em] animate-pulse">Free Hit</motion.span>}</div><span className="text-[10px] font-black uppercase text-primary">Over {currentOverDisplayNo}</span></div>
               <div className="flex flex-nowrap justify-center gap-1 sm:gap-1.5 items-center w-full overflow-hidden py-2 px-1">
                 {(() => {
                   const ballsInThisOver = sessionEvents.filter(b => b.overNo === (activeOverNo + 1));
                   const legalBallsInThisOver = ballsInThisOver.filter(b => !b.extraType || (b.extraType !== 'WIDE' && b.extraType !== 'NO_BALL')).length;
                   const placeholders = Math.max(0, 6 - legalBallsInThisOver);
                   const totalItems = [...ballsInThisOver.map(b => ({ type: 'ball' as const, data: b })), ...Array(placeholders).fill(null).map((_, i) => ({ type: 'placeholder' as const, index: i }))];
-                  const ballCount = totalItems.length;
-                  const sizeClass = ballCount > 10 ? "h-8 w-8 text-[7px]" : ballCount > 8 ? "h-9 w-9 text-[8px]" : "h-11 w-11 text-[10px]";
+                  const sizeClass = totalItems.length > 10 ? "h-8 w-8 text-[7px]" : totalItems.length > 8 ? "h-9 w-9 text-[8px]" : "h-11 w-11 text-[10px]";
                   return totalItems.map((item, idx) => {
                     if (item.type === 'ball') {
                       const ball = item.data!; let d = ""; let c = "border-muted bg-muted/20 text-muted-foreground";
@@ -316,20 +323,10 @@ export default function LiveScoringPage() {
                         if (ball.extraType === "WIDE") d = ball.runs > 0 ? `W+${ball.runs}wd` : "W+wd"; 
                         else if (ball.extraType === "NO_BALL") d = ball.runs > 0 ? `W+${ball.runs}nb` : "W+nb";
                         c = "border-red-500 bg-red-500/10 text-red-600"; 
-                      } else if (ball.extraType === "WIDE") { 
-                        d = ball.runs > 0 ? `wd+${ball.runs}` : "wd"; 
-                        c = "border-yellow-600 bg-yellow-500/10 text-yellow-700"; 
-                      } else if (ball.extraType === "NO_BALL") { 
-                        d = ball.runs > 0 ? `nb+${ball.runs}` : "nb"; 
-                        c = "border-yellow-600 bg-yellow-500/10 text-yellow-700"; 
-                      } else if (ball.extraType === "BYE" || ball.extraType === "LEG_BYE") { 
-                        d = `${ball.runs}${ball.extraType === "BYE" ? 'b' : 'lb'}`; 
-                        c = "border-blue-400 bg-blue-400/10 text-blue-600"; 
-                      } else { 
-                        d = ball.runs.toString(); 
-                        if (ball.runs === 4) c = "border-primary bg-primary/10 text-primary"; 
-                        else if (ball.runs === 6) c = "border-purple-600 bg-purple-500/10 text-purple-600"; 
-                      }
+                      } else if (ball.extraType === "WIDE") { d = ball.runs > 0 ? `wd+${ball.runs}` : "wd"; c = "border-yellow-600 bg-yellow-500/10 text-yellow-700"; }
+                      else if (ball.extraType === "NO_BALL") { d = ball.runs > 0 ? `nb+${ball.runs}` : "nb"; c = "border-yellow-600 bg-yellow-500/10 text-yellow-700"; }
+                      else if (ball.extraType === "BYE" || ball.extraType === "LEG_BYE") { d = `${ball.runs}${ball.extraType === "BYE" ? 'b' : 'lb'}`; c = "border-blue-400 bg-blue-400/10 text-blue-600"; }
+                      else { d = ball.runs.toString(); if (ball.runs === 4) c = "border-primary bg-primary/10 text-primary"; else if (ball.runs === 6) c = "border-purple-600 bg-purple-500/10 text-purple-600"; }
                       return <div key={`over-ball-${idx}-${ball.ballInOver}`} className={cn("rounded-full flex items-center justify-center font-black transition-all shadow-sm shrink-0 border-2", sizeClass, c)}>{d}</div>;
                     }
                     const isNext = idx === ballsInThisOver.length && legalBallsInThisOver < 6;
@@ -364,19 +361,20 @@ export default function LiveScoringPage() {
           </div>
         )}
       </div>
-      <div className="flex-none z-40 border-t bg-background/95 backdrop-blur-lg pb-8 shadow-2xl">
-        <div className="mx-auto max-w-3xl px-4 py-4"><div className="grid grid-cols-4 gap-2">
-          {[ {l:"0", s:"Dot", v:"dot", r:0}, {l:"1", r:1, v:"default"}, {l:"2", r:2, v:"default"}, {l:"3", r:3, v:"default"}, {l:"4", s:"Four", v:"boundary", r:4}, {l:"6", s:"Sixer", v:"six", r:6}, {l:"W", s:"Wicket", v:"wicket", r:0, w:true} ].map((b, i) => (
-            <ScoringButton key={i} label={b.l} sublabel={b.s} onClick={() => onScoreClick({runs: b.r, isWicket: b.w})} variant={b.v as any} disabled={isProcessing} />
-          ))}
-          <ScoringButton label="NB" sublabel="No Ball" onClick={() => { setPendingExtraType("NO_BALL"); setShowExtraModal(true); }} variant="extra" disabled={isProcessing} />
-          <ScoringButton label="WD" sublabel="Wide" onClick={() => { setPendingExtraType("WIDE"); setShowExtraModal(true); }} variant="extra" disabled={isProcessing} />
-          <ScoringButton label="BYE" sublabel="Bye" onClick={() => { setPendingExtraType("BYE"); setShowExtraModal(true); }} variant="extra" disabled={isProcessing} />
-          <ScoringButton label="LB" sublabel="LegBye" onClick={() => { setPendingExtraType("LEG_BYE"); setShowExtraModal(true); }} variant="extra" disabled={isProcessing} />
-          <ScoringButton label="RETIRED" sublabel="Hurt" onClick={() => setShowRetiredHurtModal(true)} variant="retired" disabled={isProcessing} />
-        </div></div>
-      </div>
-
+      {!isMatchFinished && !isInningsBreak && isMatchStarted && (
+        <div className="flex-none z-40 border-t bg-background/95 backdrop-blur-lg pb-8 shadow-2xl">
+          <div className="mx-auto max-w-3xl px-4 py-4"><div className="grid grid-cols-4 gap-2">
+            {[ {l:"0", s:"Dot", v:"dot", r:0}, {l:"1", r:1, v:"default"}, {l:"2", r:2, v:"default"}, {l:"3", r:3, v:"default"}, {l:"4", s:"Four", v:"boundary", r:4}, {l:"6", s:"Sixer", v:"six", r:6}, {l:"W", s:"Wicket", v:"wicket", r:0, w:true} ].map((b, i) => (
+              <ScoringButton key={i} label={b.l} sublabel={b.s} onClick={() => onScoreClick({runs: b.r, isWicket: b.w})} variant={b.v as any} disabled={isProcessing} />
+            ))}
+            <ScoringButton label="NB" sublabel="No Ball" onClick={() => { setPendingExtraType("NO_BALL"); setShowExtraModal(true); }} variant="extra" disabled={isProcessing} />
+            <ScoringButton label="WD" sublabel="Wide" onClick={() => { setPendingExtraType("WIDE"); setShowExtraModal(true); }} variant="extra" disabled={isProcessing} />
+            <ScoringButton label="BYE" sublabel="Bye" onClick={() => { setPendingExtraType("BYE"); setShowExtraModal(true); }} variant="extra" disabled={isProcessing} />
+            <ScoringButton label="LB" sublabel="LegBye" onClick={() => { setPendingExtraType("LEG_BYE"); setShowExtraModal(true); }} variant="extra" disabled={isProcessing} />
+            <ScoringButton label="RETIRED" sublabel="Hurt" onClick={() => setShowRetiredHurtModal(true)} variant="retired" disabled={isProcessing} />
+          </div></div>
+        </div>
+      )}
       <AnimatePresence>
         {showWicketModal && (
           <div className="fixed inset-0 z-[110] flex items-end sm:items-center justify-center p-4 bg-black/70 backdrop-blur-md">
