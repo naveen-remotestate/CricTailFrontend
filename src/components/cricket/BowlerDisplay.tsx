@@ -23,7 +23,7 @@ export function BowlerDisplay({
     <Card className="overflow-hidden border-none shadow-md bg-card/50">
       <CardContent className="p-0">
         <motion.div
-          layout
+          layout="position"
           className="flex items-center justify-between px-4 py-3 bg-blue-500/5"
         >
           <div className="flex items-center gap-3">

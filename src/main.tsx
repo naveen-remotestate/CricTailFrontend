@@ -25,6 +25,8 @@ ReactDOM.createRoot(document.getElementById("root")!).render(
           position="top-center" 
           richColors 
           closeButton
+          visibleToasts={1}
+          duration={2000}
           toastOptions={{
             style: {
               background: "hsl(var(--card))",

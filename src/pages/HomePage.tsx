@@ -9,7 +9,6 @@ import { useAuthStore } from "@/store/authStore";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Trophy, 
-  Users, 
   PlusCircle, 
   Play, 
   ChevronRight, 
@@ -30,8 +29,8 @@ export default function HomePage() {
   const [showAllFinished, setShowAllFinished] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const liveMatches = matches?.filter((m: any) => !m.is_completed) || [];
-  const finishedMatches = matches?.filter((m: any) => m.is_completed) || [];
+  const liveMatches = matches?.filter((m: any) => !m.winner_team_id) || [];
+  const finishedMatches = matches?.filter((m: any) => m.winner_team_id) || [];
 
   const handleCopyLink = (matchId: string) => {
     const url = `${window.location.origin}/matches/${matchId}/live`;

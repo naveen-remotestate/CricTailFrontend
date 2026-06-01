@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useMatch, useLiveState, useScorecard, useBallEvents } from "@/hooks/useMatches";
 import { ScoreHeader } from "@/components/cricket/ScoreHeader";
 import { BatsmanDisplay } from "@/components/cricket/BatsmanDisplay";
@@ -8,24 +8,21 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Link } from "react-router-dom";
-import { ArrowLeft, Activity, Play, Trophy, X, FileText, Share2, History } from "lucide-react";
-import type { User, BallEvent, InningsScorecard } from "@/types";
+import { ArrowLeft, Activity, Play, FileText, Share2, History, Medal } from "lucide-react";
+import type { User } from "@/types";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
 import { toast } from "sonner";
-import { formatOvers, calculateRunRate, formatPlayerName, formatTeamName, cn } from "@/lib/utils";
+import { formatPlayerName, cn } from "@/lib/utils";
 
-export default function LiveScorePage() {
+function LiveScorePage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: match, isLoading: matchLoading } = useMatch(id || "");
   const { data: liveState, isLoading: liveLoading } = useLiveState(id || "");
-  const { data: scorecard, isLoading: scorecardLoading } = useScorecard(id || "");
+  const { data: scorecard } = useScorecard(id || "");
   const { data: apiBallEvents } = useBallEvents(match?.current_inning_id || "");
   const { user } = useAuthStore();
-  const [showScorecard, setShowScorecard] = useState(false);
 
   const handleShareMatch = () => {
     const url = window.location.href;
@@ -56,11 +53,15 @@ export default function LiveScorePage() {
   }
 
   const isHost = match.hosted_by === user?.user_id;
+  const isMatchFinished = !!match.winner_team_id;
+
   const isSecondInnings = match.current_innings_no === 2;
   const target = isSecondInnings ? (match.previous_innings_score || 0) + 1 : undefined;
   const ballsRemaining = (match.overs * 6) - (match.legal_balls || 0);
 
   const activeOverNo = Math.floor((match?.legal_balls || 0) / 6);
+  // Ensure we only show balls for the current over. The hook useBallEvents(match?.current_inning_id) 
+  // already ensures we only get balls for the current inning.
   const ballsInCurrentOver = (apiBallEvents || [])
     .filter((b: any) => b.over_no === (activeOverNo + 1))
     .sort((a: any, b: any) => a.ball_sequence - b.ball_sequence);
@@ -83,163 +84,93 @@ export default function LiveScorePage() {
     mobile_number: "", is_active: true, created_at: "", updated_at: ""
   };
 
-  const renderInningsContent = (inn: InningsScorecard | undefined, inningsNo: number) => {
-    if (!inn) return (
-      <div className="text-center py-20 bg-muted/10 rounded-3xl border border-dashed">
-        <p className="text-muted-foreground">Innings {inningsNo} not started yet.</p>
-      </div>
-    );
-
-    const battingTeamName = match.team_a_id === inn.batting_team_id ? match.team_a_name : match.team_b_name;
-    const bowlingTeamName = match.team_a_id === inn.bowling_team_id ? match.team_a_name : match.team_b_name;
-
-    return (
-      <div className="space-y-6">
-        {/* Summary Card */}
-        <div className="flex flex-col bg-card dark:bg-muted/30 rounded-xl border border-border p-4 gap-2 shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <h3 className="font-black text-sm uppercase tracking-wider">{battingTeamName}</h3>
-              <p className="text-[10px] text-muted-foreground uppercase font-bold">Innings {inningsNo} Summary</p>
-            </div>
-            <div className="text-right">
-              <p className="text-2xl font-black">{inn.total_runs}/{inn.total_wickets}</p>
-              <p className="text-[10px] text-muted-foreground font-bold uppercase">
-                {formatOvers(inn.legal_balls)} OVS | CRR {calculateRunRate(inn.total_runs, inn.legal_balls)}
-              </p>
-            </div>
-          </div>
-          <div className="pt-2 border-t border-border/30 flex justify-between items-center">
-            <span className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">Team Extras</span>
-            <span className="text-[10px] font-black uppercase">{inn.extras}</span>
-          </div>
-        </div>
-
-        {/* Batting Table */}
-        <div className="space-y-2">
-          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-primary px-1">BATTING - {formatTeamName(battingTeamName)}</h4>
-          <div className="overflow-x-auto bg-card dark:bg-primary/5 rounded-xl p-3 border shadow-sm border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-primary/10 text-left text-[10px] font-black uppercase tracking-widest text-primary/60">
-                  <th className="pb-2">Batter</th>
-                  <th className="pb-2 text-right">R</th>
-                  <th className="pb-2 text-right">B</th>
-                  <th className="pb-2 text-right">4s</th>
-                  <th className="pb-2 text-right">6s</th>
-                  <th className="pb-2 text-right">SR</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inn.batting?.map((card) => (
-                  <tr key={card.user_id} className="border-b border-primary/10 last:border-0">
-                    <td className="py-3">
-                      <div className="flex flex-col">
-                        <span className="font-bold text-foreground">{formatPlayerName(card.player_name)}</span>
-                        <span className="text-[10px] text-muted-foreground italic">
-                          {card.is_out ? (card.dismissal_type || "Out") : "not out"}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3 text-right font-black">{card.runs}</td>
-                    <td className="py-3 text-right text-muted-foreground">{card.balls_faced}</td>
-                    <td className="py-3 text-right text-muted-foreground">{card.fours}</td>
-                    <td className="py-3 text-right text-muted-foreground">{card.sixes}</td>
-                    <td className="py-3 text-right font-bold text-primary">
-                      {card.balls_faced > 0 ? ((card.runs / card.balls_faced) * 100).toFixed(1) : "0.0"}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Bowling Table */}
-        <div className="space-y-2">
-          <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-600 px-1">BOWLING - {formatTeamName(bowlingTeamName)}</h4>
-          <div className="overflow-x-auto bg-card dark:bg-blue-600/5 rounded-xl p-3 border shadow-sm border-border">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-blue-600/10 text-left text-[10px] font-black uppercase tracking-widest text-blue-600/60">
-                  <th className="pb-2">Bowler</th>
-                  <th className="pb-2 text-right">O</th>
-                  <th className="pb-2 text-right">M</th>
-                  <th className="pb-2 text-right">R</th>
-                  <th className="pb-2 text-right">W</th>
-                  <th className="pb-2 text-right">Econ</th>
-                </tr>
-              </thead>
-              <tbody>
-                {inn.bowling?.map((card) => (
-                  <tr key={card.user_id} className="border-b border-blue-600/10 last:border-0">
-                    <td className="py-3">
-                      <span className="font-bold text-foreground">{formatPlayerName(card.player_name)}</span>
-                    </td>
-                    <td className="py-3 text-right font-black">{formatOvers(card.legal_balls)}</td>
-                    <td className="py-3 text-right font-black">0</td> {/* Maidens not in API response yet */}
-                    <td className="py-3 text-right font-black">{card.runs_conceded}</td>
-                    <td className="py-3 text-right font-black text-blue-600">{card.wickets}</td>
-                    <td className="py-3 text-right font-bold">
-                      {calculateRunRate(card.runs_conceded, card.legal_balls)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </div>
-    );
-  };
 
   return (
-    <div className="min-h-screen bg-background pb-10">
-      <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur-lg">
-        <div className="mx-auto max-w-7xl px-4 py-3">
-          <div className="flex items-center justify-between">
-            <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground font-black uppercase tracking-tighter italic">
-              <ArrowLeft className="h-4 w-4" /> Back
-            </button>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-primary/20 text-primary hover:bg-primary/10" onClick={handleShareMatch} title="Share Match">
-                <Share2 className="h-3.5 w-3.5" />
-              </Button>
-              <div className="h-4 w-[1px] bg-border mx-1" />
-              <div className="live-indicator relative h-2.5 w-2.5 rounded-full bg-red-500" />
-              <Badge variant="live" className="text-xs">LIVE</Badge>
+    <div className="h-[calc(100vh-64px)] bg-background flex flex-col overflow-hidden">
+      {/* 1. FIXED TOP: Nav + ScoreHeader */}
+      <div className="flex-none z-40 border-b shadow-md">
+        <div className="bg-background/95 backdrop-blur-lg">
+          <div className="mx-auto max-w-7xl px-4 py-3">
+            <div className="flex items-center justify-between">
+              <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground font-black uppercase tracking-tighter italic">
+                <ArrowLeft className="h-4 w-4" /> Back
+              </button>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-primary/20 text-primary hover:bg-primary/10" onClick={handleShareMatch} title="Share Match">
+                  <Share2 className="h-3.5 w-3.5" />
+                </Button>
+                <div className="h-4 w-[1px] bg-border mx-1" />
+                <div className="live-indicator relative h-2.5 w-2.5 rounded-full bg-red-500" />
+                <Badge variant="live" className="text-xs">LIVE</Badge>
+              </div>
             </div>
           </div>
         </div>
+        <ScoreHeader 
+          match={match} 
+          liveState={{ 
+            match_id: match.match_id, 
+            total_runs: match.current_total_runs || 0, 
+            total_wickets: match.current_total_wickets || 0, 
+            legal_balls: match.legal_balls || 0, 
+            updated_at: new Date().toISOString() 
+          }} 
+          firstInningsSummary={scorecard?.first_innings ? {
+            runs: scorecard.first_innings.total_runs,
+            wickets: scorecard.first_innings.total_wickets,
+            legal_balls: scorecard.first_innings.legal_balls
+          } : undefined}
+        />
       </div>
 
-      <ScoreHeader match={match} liveState={{ match_id: match.match_id, total_runs: match.current_total_runs, total_wickets: match.current_total_wickets, legal_balls: match.legal_balls, updated_at: new Date().toISOString() }} />
-
-      <div className="mx-auto max-w-3xl px-4 py-4 space-y-4">
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center gap-2">
-          {isHost && !match.is_completed && (
+      {/* 2. SCROLLABLE MIDDLE: Match Data */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide py-4">
+        <div className="mx-auto max-w-3xl px-4 space-y-4">
+          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="flex justify-center gap-2">
+          {isHost && !match.winner_team_id && (
             <Button size="sm" className="rounded-full bg-cricket-red hover:bg-cricket-redDark px-6 font-bold shadow-lg shadow-primary/20" asChild>
               <Link to={`/matches/${match.match_id}/score`}>
                 <Play className="h-3.5 w-3.5 mr-2 fill-current" /> START SCORING
               </Link>
             </Button>
           )}
-          <Button variant="outline" size="sm" className="h-9 rounded-full text-[10px] font-black uppercase tracking-widest gap-2 px-6 bg-card" onClick={() => setShowScorecard(true)}>
-            <FileText className="h-4 w-4" /> Full Scorecard
+          <Button variant="outline" size="sm" className="h-9 rounded-full text-[10px] font-black uppercase tracking-widest gap-2 px-6 bg-card" asChild>
+            <Link to={`/matches/${match.match_id}/scorecard`}>
+              <FileText className="h-4 w-4" /> Full Scorecard
+            </Link>
           </Button>
         </motion.div>
 
-        {isSecondInnings && target && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center p-3 rounded-2xl bg-primary/5 border border-primary/10 shadow-sm">
-            <p className="text-sm font-medium">Need <span className="font-black text-primary">{target - match.current_total_runs}</span> runs from <span className="font-black">{Math.floor(ballsRemaining / 6)}.{ballsRemaining % 6}</span> overs</p>
-          </motion.div>
-        )}
+        {isMatchFinished ? (
+          <div className="flex-1 flex items-center justify-center py-10">
+             <Card className="w-full max-w-sm rounded-[2.5rem] border border-border shadow-xl bg-card p-8 text-center mx-auto">
+                <div className="h-16 w-16 rounded-3xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
+                   <Medal className="h-8 w-8 text-yellow-600" />
+                </div>
+                <h2 className="text-xl font-black uppercase tracking-tighter italic">Match Finished</h2>
+                <p className="text-sm font-black text-primary mt-2 mb-8 uppercase tracking-widest">
+                  {match.winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name} WON!
+                </p>
+                <div className="space-y-3">
+                  <Button size="lg" className="w-full rounded-2xl h-14 font-black uppercase tracking-widest gap-2 shadow-lg shadow-primary/20" asChild>
+                     <Link to={`/matches/${match.match_id}/scorecard`}>View Scorecard</Link>
+                  </Button>
+                </div>
+             </Card>
+          </div>
+        ) : (
+          <>
+            {isSecondInnings && target && (
+              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-center p-3 rounded-2xl bg-primary/5 border border-primary/10 shadow-sm">
+                <p className="text-sm font-medium">Need <span className="font-black text-primary">{target - (match.current_total_runs || 0)}</span> runs from <span className="font-black">{Math.floor(ballsRemaining / 6)}.{ballsRemaining % 6}</span> overs</p>
+              </motion.div>
+            )}
 
-        <BatsmanDisplay striker={striker} nonStriker={nonStriker} strikerRuns={match.striker_runs} strikerBalls={match.striker_balls} nonStrikerRuns={match.non_striker_runs} nonStrikerBalls={match.non_striker_balls} />
+            <BatsmanDisplay striker={striker} nonStriker={nonStriker} strikerRuns={match.striker_runs} strikerBalls={match.striker_balls} nonStrikerRuns={match.non_striker_runs} nonStrikerBalls={match.non_striker_balls} />
 
-        <BowlerDisplay bowler={bowler} overs={match.bowler_legal_balls} runs={match.bowler_runs_given} wickets={match.bowler_wickets} />
+            <BowlerDisplay bowler={bowler} overs={match.bowler_legal_balls} runs={match.bowler_runs_given} wickets={match.bowler_wickets} />
 
-        {/* Current Over Progress */}
+            {/* Current Over Progress */}
         <Card className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-4 px-1">
@@ -362,10 +293,10 @@ export default function LiveScorePage() {
                                   )}>
                                     {(() => {
                                       if (ball.is_wicket) return "W";
-                                      if (ball.extra_type === "WIDE") return "wd";
-                                      if (ball.extra_type === "NO_BALL") return "nb";
-                                      if (ball.extra_type === "BYE") return "b";
-                                      if (ball.extra_type === "LEG_BYE") return "lb";
+                                      if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `${ball.extra_runs}wd` : "wd";
+                                      if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `${ball.runs_off_bat}nb` : "nb";
+                                      if (ball.extra_type === "BYE") return ball.extra_runs > 0 ? `${ball.extra_runs}b` : "b";
+                                      if (ball.extra_type === "LEG_BYE") return ball.extra_runs > 0 ? `${ball.extra_runs}lb` : "lb";
                                       return ball.runs_off_bat;
                                     })()}
                                   </div>
@@ -425,40 +356,11 @@ export default function LiveScorePage() {
             </div>
           </CardContent>
         </Card>
-      </div>
-
-      <AnimatePresence>
-        {showScorecard && (
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[100] bg-background flex flex-col">
-            <div className="flex items-center justify-between px-4 py-4 border-b bg-card">
-              <h2 className="text-lg font-black uppercase tracking-tighter italic">Match Scorecard</h2>
-              <Button variant="ghost" size="icon" onClick={() => setShowScorecard(false)} className="rounded-full"><X className="h-5 w-5" /></Button>
-            </div>
-            <div className="flex-1 overflow-y-auto pb-10">
-              <div className="p-4 space-y-6 max-w-4xl mx-auto w-full">
-                {scorecardLoading ? (<div className="space-y-4"><Skeleton className="h-20 w-full rounded-xl" /><Skeleton className="h-64 w-full rounded-xl" /></div>) : !scorecard ? (
-                  <div className="text-center py-20"><div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4 opacity-50"><FileText className="h-8 w-8 text-muted-foreground" /></div><h3 className="font-bold text-lg">No Scorecard Data</h3></div>
-                ) : (
-                  <Tabs defaultValue={match.current_innings_no.toString()} className="w-full">
-                    <div className="flex items-center justify-center mb-6">
-                      <TabsList className="bg-muted/50 p-1 rounded-full border">
-                        <TabsTrigger value="1" className="rounded-full px-8 font-black uppercase tracking-tighter">Innings 1</TabsTrigger>
-                        <TabsTrigger value="2" className="rounded-full px-8 font-black uppercase tracking-tighter">Innings 2</TabsTrigger>
-                      </TabsList>
-                    </div>
-                    <TabsContent value="1" className="mt-0 outline-none">
-                      {renderInningsContent(scorecard.first_innings, 1)}
-                    </TabsContent>
-                    <TabsContent value="2" className="mt-0 outline-none">
-                      {renderInningsContent(scorecard.second_innings, 2)}
-                    </TabsContent>
-                  </Tabs>
-                )}
-              </div>
-            </div>
-          </motion.div>
+        </>
         )}
-      </AnimatePresence>
+      </div>
     </div>
+  </div>
   );
 }
+export default LiveScorePage;

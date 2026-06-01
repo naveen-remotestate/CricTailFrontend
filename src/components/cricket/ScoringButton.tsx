@@ -5,7 +5,7 @@ interface ScoringButtonProps {
   label: string;
   sublabel?: string;
   onClick: () => void;
-  variant?: "default" | "wicket" | "extra" | "boundary" | "six" | "dot";
+  variant?: "default" | "wicket" | "extra" | "boundary" | "six" | "dot" | "undo" | "retired";
   className?: string;
   disabled?: boolean;
 }
@@ -18,6 +18,7 @@ const variantStyles = {
   six: "bg-purple-500/10 border-2 border-purple-500/30 hover:bg-purple-500/20 hover:border-purple-500/50 active:bg-purple-500/30 text-purple-600",
   dot: "bg-muted/50 border-2 border-border hover:border-cricket-silverDark/50 active:bg-muted",
   undo: "bg-muted/10 border-2 border-border hover:bg-muted/20 active:bg-muted/30 text-muted-foreground",
+  retired: "bg-orange-500/10 border-2 border-orange-500/30 hover:bg-orange-500/20 hover:border-orange-500/50 active:bg-orange-500/30 text-orange-600",
 };
 
 export function ScoringButton({
@@ -28,6 +29,8 @@ export function ScoringButton({
   className,
   disabled,
 }: ScoringButtonProps) {
+  const isLongLabel = label.length > 3;
+
   return (
     <motion.button
       whileTap={{ scale: 0.92 }}
@@ -35,14 +38,23 @@ export function ScoringButton({
       onClick={onClick}
       disabled={disabled}
       className={cn(
-        "flex flex-col items-center justify-center rounded-2xl p-4 transition-colors no-select",
+        "flex flex-col items-center justify-center rounded-2xl p-2 sm:p-4 transition-colors no-select min-h-[70px]",
         variantStyles[variant],
         disabled && "opacity-50 cursor-not-allowed",
         className
       )}
     >
-      <span className="text-2xl font-bold">{label}</span>
-      {sublabel && <span className="text-xs opacity-70 mt-0.5">{sublabel}</span>}
+      <span className={cn(
+        "font-black leading-none tracking-tighter",
+        isLongLabel ? "text-sm sm:text-base" : "text-xl sm:text-2xl"
+      )}>
+        {label}
+      </span>
+      {sublabel && (
+        <span className="text-[9px] sm:text-[10px] font-black uppercase opacity-60 mt-1 tracking-widest whitespace-nowrap">
+          {sublabel}
+        </span>
+      )}
     </motion.button>
   );
 }

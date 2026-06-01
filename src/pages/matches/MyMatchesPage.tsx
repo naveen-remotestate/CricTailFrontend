@@ -14,8 +14,8 @@ export default function MyMatchesPage() {
   // Filter matches hosted by the logged-in user
   const myMatches = matches?.filter((match: any) => match.hosted_by === user?.user_id) || [];
   
-  const liveMatches = myMatches.filter((m: any) => !m.is_completed);
-  const finishedMatches = myMatches.filter((m: any) => m.is_completed);
+  const liveMatches = myMatches.filter((m: any) => !m.winner_team_id);
+  const finishedMatches = myMatches.filter((m: any) => m.winner_team_id);
 
   if (isLoading) {
     return (

@@ -43,7 +43,7 @@ export function BatsmanDisplay({
             {batsmen.map((b) => (
               <motion.div
                 key={b.user?.user_id || (b.isStriker ? 'striker' : 'non-striker')}
-                layout
+                layout="position"
                 initial={{ opacity: 0, y: b.isStriker ? -20 : 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95 }}

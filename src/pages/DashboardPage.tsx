@@ -17,9 +17,6 @@ import {
   Hand,
   Hash,
   Award,
-  CircleDot,
-  X,
-  Settings2,
   Activity
 } from "lucide-react";
 import { formatPlayerName, formatOvers, cn } from "@/lib/utils";
@@ -29,8 +26,8 @@ export default function DashboardPage() {
   const { data: myMatches, isLoading: matchesLoading } = useMyMatches();
   const { data: stats, isLoading: statsLoading } = usePlayerStats();
 
-  const liveMatches = myMatches?.filter((m: any) => !m.is_completed && m.start_time !== null) || [];
-  const completedMatches = myMatches?.filter((m: any) => m.is_completed) || [];
+  const liveMatches = myMatches?.filter((m: any) => !m.winner_team_id && m.start_time !== null) || [];
+  const finishedMatches = myMatches?.filter((m: any) => m.winner_team_id !== null) || [];
 
   const isLoading = matchesLoading || statsLoading;
 
@@ -316,14 +313,14 @@ export default function DashboardPage() {
           </section>
         )}
 
-        {completedMatches.length > 0 && (
+        {finishedMatches.length > 0 && (
           <section className="space-y-4">
             <div className="flex items-center gap-2 px-1">
               <Check className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Recent Results</h2>
+              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Finished Matches</h2>
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {completedMatches.slice(0, 3).map((match: any) => (
+              {finishedMatches.slice(0, 3).map((match: any) => (
                 <LiveMatchCard key={match.match_id} match={match} />
               ))}
             </div>

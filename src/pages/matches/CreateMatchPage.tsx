@@ -135,11 +135,13 @@ export default function CreateMatchPage() {
 
   const handleAddPlayer = (user: User, team: "A" | "B") => {
     try {
+      const isAlreadySelected = store.selectedPlayers.some(p => p.user.user_id === user.user_id && p.team === team);
       store.addPlayer(user, team);
-      const isSelected = store.selectedPlayers.some(p => p.user.user_id === user.user_id && p.team === team);
+      
       const teamName = team === "A" ? store.teamAName : store.teamBName;
       const formattedName = formatPlayerName(user.full_name);
-      if (!isSelected) {
+      
+      if (isAlreadySelected) {
         toast.success(`${formattedName} removed from ${teamName}`);
       } else {
         toast.success(`${formattedName} added to ${teamName}`);
@@ -147,6 +149,12 @@ export default function CreateMatchPage() {
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to update player");
     }
+  };
+
+  const handleRemovePlayer = (userId: string, team: "A" | "B", fullName: string) => {
+    store.removePlayer(userId, team);
+    const teamName = team === "A" ? store.teamAName : store.teamBName;
+    toast.success(`${formatPlayerName(fullName)} removed from ${teamName}`);
   };
 
   const handleCreateNewPlayer = async (team: "A" | "B") => {
@@ -365,14 +373,16 @@ export default function CreateMatchPage() {
                         type="number"
                         min={1}
                         max={50}
-                        value={store.overs}
-                        onChange={(e) =>
+                        value={store.overs === 0 ? "" : store.overs}
+                        onChange={(e) => {
+                          const val = e.target.value === "" ? 0 : parseInt(e.target.value);
                           store.setBasicDetails(
                             store.teamAName,
                             store.teamBName,
-                            parseInt(e.target.value) || 1,
-                          )
-                        }
+                            val,
+                          );
+                        }}
+                        onFocus={(e) => e.target.select()}
                         error={errors.overs}
                         className="w-32"
                       />
@@ -698,7 +708,7 @@ export default function CreateMatchPage() {
                                     <Shield className="h-3.5 w-3.5" />
                                   </button>
                                   <button
-                                    onClick={() => store.removePlayer(player.user.user_id, "A")}
+                                    onClick={() => handleRemovePlayer(player.user.user_id, "A", player.user.full_name)}
                                     className="p-1 rounded text-muted-foreground hover:text-cricket-red transition-all opacity-60 hover:opacity-100"
                                   >
                                     <X className="h-3.5 w-3.5" />
@@ -782,7 +792,7 @@ export default function CreateMatchPage() {
                                     <Shield className="h-3.5 w-3.5" />
                                   </button>
                                   <button
-                                    onClick={() => store.removePlayer(player.user.user_id, "B")}
+                                    onClick={() => handleRemovePlayer(player.user.user_id, "B", player.user.full_name)}
                                     className="p-1 rounded text-muted-foreground hover:text-cricket-red transition-all opacity-60 hover:opacity-100"
                                   >
                                     <X className="h-3.5 w-3.5" />
