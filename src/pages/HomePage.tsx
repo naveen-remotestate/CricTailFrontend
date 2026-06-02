@@ -310,7 +310,7 @@ export default function HomePage() {
                            <span className="text-[10px] font-black text-red-500 uppercase tracking-widest">Live Now</span>
                         </div>
                         <p className="text-sm font-black uppercase truncate tracking-tight">
-                          {formatTeamName(match.team_a_name)} VS {formatTeamName(match.team_b_name)}
+                          <span className="text-red-500">{formatTeamName(match.team_a_name)}</span> <span className="opacity-20">VS</span> <span className="text-blue-500">{formatTeamName(match.team_b_name)}</span>
                         </p>
                         <p className="text-[10px] font-bold text-muted-foreground uppercase mt-0.5">
                           Innings {match.current_innings_no} | {formatOvers(match.legal_balls)} Overs

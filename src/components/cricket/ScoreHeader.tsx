@@ -66,18 +66,8 @@ export function ScoreHeader({ match, liveState, compact, firstInningsSummary }: 
     <div className="w-full bg-background">
       <div className="bg-gradient-to-b from-[#1a1a2e] to-[#16213e] text-white px-4 pt-1.5 pb-1 relative overflow-hidden">
         
-        {/* CENTERED MATCHUP (H + V Center) - Background Decoration Style */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20 select-none z-0">
-           <div className="flex items-center gap-3">
-              <span className="text-lg sm:text-xl font-black uppercase tracking-[0.2em] italic text-red-500">{formatTeamName(teamAName)}</span>
-              <span className="text-xs font-black text-white/10 italic">VS</span>
-              <span className="text-lg sm:text-xl font-black uppercase tracking-[0.2em] italic text-blue-500">{formatTeamName(teamBName)}</span>
-           </div>
-           <div className="text-[8px] font-black uppercase tracking-[0.5em] text-white/40 mt-0.5">Innings {match.current_innings_no}</div>
-        </div>
-
         {/* INNINGS COMPARISON (Row 1) */}
-        <div className="flex items-start justify-between mb-1 relative z-10">
+        <div className="flex items-center justify-between mb-1 relative z-10">
            {/* 1st Innings (Left) */}
            <div className="flex flex-col items-start">
               <div className="flex items-center gap-1.5 mb-0.5">
@@ -98,6 +88,16 @@ export function ScoreHeader({ match, liveState, compact, firstInningsSummary }: 
               <div className="text-[8px] font-black text-white/20 italic tracking-widest uppercase">
                 {inn1Overs} / {match.overs} OV
               </div>
+           </div>
+
+           {/* MATCHUP (Center) */}
+           <div className="flex flex-col items-center justify-center gap-0.5 px-2">
+              <div className="flex items-center gap-1.5 whitespace-nowrap">
+                 <span className="text-[10px] font-black uppercase text-red-500 italic drop-shadow-[0_0_8px_rgba(239,68,68,0.2)]">{formatTeamName(teamAName)}</span>
+                 <span className="text-[8px] font-black text-white/10 italic">VS</span>
+                 <span className="text-[10px] font-black uppercase text-blue-500 italic drop-shadow-[0_0_8px_rgba(59,130,246,0.2)]">{formatTeamName(teamBName)}</span>
+              </div>
+              <div className="text-[7px] font-black text-primary/40 uppercase tracking-[0.2em]">Innings {match.current_innings_no}</div>
            </div>
 
            {/* 2nd Innings (Right) */}

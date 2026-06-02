@@ -27,7 +27,7 @@ import {
   History,
 } from "lucide-react";
 import type { User, LiveMatchState } from "@/types";
-import { formatOvers, formatPlayerName, cn, calculateRunRate } from "@/lib/utils";
+import { formatOvers, formatPlayerName, formatTeamName, cn, calculateRunRate } from "@/lib/utils";
 import { ScoringButton } from "@/components/cricket/ScoringButton";
 
 // Interfaces

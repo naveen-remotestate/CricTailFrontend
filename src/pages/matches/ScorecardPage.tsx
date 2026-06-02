@@ -297,7 +297,9 @@ export default function ScorecardPage() {
              <span className="text-[10px] font-black uppercase tracking-widest text-red-500 italic">Full Scorecard</span>
           </div>
           <h2 className="text-3xl font-black uppercase italic tracking-tighter leading-none">
-            {formatTeamName(match.team_a_name)} <span className="text-primary text-xl px-1">VS</span> {formatTeamName(match.team_b_name)}
+            <span className="text-red-500">{formatTeamName(match.team_a_name)}</span>
+            <span className="text-muted-foreground/20 text-xl px-2">VS</span>
+            <span className="text-blue-500">{formatTeamName(match.team_b_name)}</span>
           </h2>
           <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-muted-foreground uppercase tracking-[0.2em]">
             <span>{match.overs} Overs</span>

@@ -13,7 +13,7 @@ import type { User } from "@/types";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { formatPlayerName, cn } from "@/lib/utils";
+import { formatPlayerName, formatTeamName, cn } from "@/lib/utils";
 
 export default function LiveScorePage() {
   const { id } = useParams<{ id: string }>();
@@ -92,6 +92,7 @@ export default function LiveScorePage() {
               <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground font-black uppercase tracking-tighter italic">
                 <ArrowLeft className="h-4 w-4" /> Back
               </button>
+
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="icon" className="h-8 w-8 rounded-full border-primary/20 text-primary hover:bg-primary/10" onClick={handleShareMatch} title="Share Match">
                   <Share2 className="h-3.5 w-3.5" />
