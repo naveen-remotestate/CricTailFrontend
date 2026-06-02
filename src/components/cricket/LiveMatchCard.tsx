@@ -36,10 +36,15 @@ export function LiveMatchCard({ match, featured = false }: LiveMatchCardProps) {
         return `${match.previous_innings_score}${wickets}`;
       }
     } 
-    // If match is live, we only show score for the current batting team at the top level
+    // If match is live
     else if (isLive) {
       if (teamId === match.batting_team_id) {
         return `${match.current_total_runs}/${match.current_total_wickets}`;
+      }
+      // If it's second innings, show the first innings score for the other team
+      if (match.current_innings_no === 2 && match.previous_innings_score !== undefined) {
+        const wickets = match.previous_innings_wickets !== undefined ? `/${match.previous_innings_wickets}` : "";
+        return `${match.previous_innings_score}${wickets}`;
       }
       return "Yet to bat";
     }

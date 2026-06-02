@@ -126,7 +126,19 @@ export function ScoreHeader({ match, liveState, compact, firstInningsSummary }: 
         {/* STATS BAR (Row 2) */}
         <div className="pt-1.5 border-t border-white/5 flex items-center justify-between relative z-10">
            <div className="flex items-center gap-3 text-[7px] font-black uppercase tracking-widest text-white/40">
-              {isSecondInnings || !!match.winner_team_id ? (
+              {isSecondInnings ? (
+                <>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-primary">CRR:</span>
+                    <span className="text-white">{calculateRunRate(liveState.total_runs, legalBallsBowled)}</span>
+                  </div>
+                  <div className="h-2 w-[1px] bg-white/10" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-yellow-500">RRR:</span>
+                    <span className="text-white">{requiredRate || "0.00"}</span>
+                  </div>
+                </>
+              ) : !!match.winner_team_id ? (
                 <>
                   <div className="flex items-center gap-1.5">
                     <span className="opacity-50">{formatTeamName(inn1TeamName)} RR:</span>
@@ -134,12 +146,15 @@ export function ScoreHeader({ match, liveState, compact, firstInningsSummary }: 
                   </div>
                   <div className="h-2 w-[1px] bg-white/10" />
                   <div className="flex items-center gap-1.5">
-                    <span className={cn(!!match.winner_team_id ? "opacity-50" : "text-primary")}>{formatTeamName(inn2TeamName)} RR:</span>
-                    <span className={cn(!!match.winner_team_id ? "text-white/60" : "text-white")}>{calculateRunRate(liveState.total_runs, legalBallsBowled)}</span>
+                    <span className="opacity-50">{formatTeamName(inn2TeamName)} RR:</span>
+                    <span className="text-white/60">{calculateRunRate(liveState.total_runs, legalBallsBowled)}</span>
                   </div>
                 </>
               ) : (
-                <span>RR: {calculateRunRate(liveState.total_runs, legalBallsBowled)}</span>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-primary">CRR:</span>
+                  <span className="text-white">{calculateRunRate(liveState.total_runs, legalBallsBowled)}</span>
+                </div>
               )}
            </div>
 
