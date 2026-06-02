@@ -14,6 +14,8 @@ import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { formatPlayerName, formatTeamName, cn } from "@/lib/utils";
+import { Confetti } from "@/components/ui/Confetti";
+import { useEffect, useState, useRef } from "react";
 
 export default function LiveScorePage() {
   const { id } = useParams<{ id: string }>();
@@ -23,6 +25,46 @@ export default function LiveScorePage() {
   const { data: scorecard } = useScorecard(id || "");
   const { data: apiBallEvents } = useBallEvents(match?.current_inning_id || "");
   const { user } = useAuthStore();
+
+  const [confettiTriggerCount, setConfettiTriggerCount] = useState(0);
+  const [confettiEvent, setConfettiEvent] = useState<string | null>(null);
+  const lastProcessedBallSeq = useRef<number | null>(null);
+  const hasLoadedInitially = useRef(false);
+
+  // Watch for big events (4, 6, Wicket)
+  useEffect(() => {
+    if (!apiBallEvents || apiBallEvents.length === 0) {
+      hasLoadedInitially.current = true;
+      return;
+    }
+
+    const lastBall = apiBallEvents[apiBallEvents.length - 1];
+    
+    // Set up initial state on first data arrival without triggering
+    if (!hasLoadedInitially.current) {
+      lastProcessedBallSeq.current = lastBall.ball_sequence;
+      hasLoadedInitially.current = true;
+      return;
+    }
+    
+    // Trigger if ball_sequence has CHANGED
+    if (lastBall.ball_sequence !== lastProcessedBallSeq.current) {
+      let eventType = null;
+      
+      // Using flags as requested (assuming naming might be slightly different or as per types)
+      // Checking for both possible naming conventions just in case
+      if (lastBall.is_wicket) eventType = "WICKET!";
+      else if (lastBall.is_boundary_six || lastBall.is_six) eventType = "SIXER!";
+      else if (lastBall.is_boundary_four || lastBall.is_four) eventType = "FOUR!";
+      
+      if (eventType) {
+        setConfettiEvent(eventType);
+        setConfettiTriggerCount(prev => prev + 1);
+      }
+      
+      lastProcessedBallSeq.current = lastBall.ball_sequence;
+    }
+  }, [apiBallEvents]);
 
   const handleShareMatch = () => {
     const url = window.location.href;
@@ -84,6 +126,7 @@ export default function LiveScorePage() {
 
   return (
     <div className="h-[calc(100vh-64px)] bg-background flex flex-col overflow-hidden">
+      <Confetti trigger={confettiTriggerCount} eventLabel={confettiEvent} />
       {/* 1. FIXED TOP: Nav + ScoreHeader */}
       <div className="flex-none z-40 border-b shadow-md">
         <div className="bg-background/95 backdrop-blur-lg">

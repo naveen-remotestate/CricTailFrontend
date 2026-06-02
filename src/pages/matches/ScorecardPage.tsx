@@ -106,35 +106,58 @@ export default function ScorecardPage() {
                 </tr>
               </thead>
               <tbody>
-                {inn.batting?.map((card) => {
-                  const isYetToBat = !card.is_out && card.balls_faced === 0 && card.user_id !== strikerId && card.user_id !== nonStrikerId;
-                  const isNotOut = !card.is_out && (card.user_id === strikerId || card.user_id === nonStrikerId);
-                  
-                  return (
-                    <tr key={card.user_id} className="border-b border-primary/10 last:border-0">
-                      <td className="py-3">
-                        <div className="flex flex-col">
-                          <span className="font-bold text-foreground">{formatPlayerName(card.player_name)}</span>
-                          <span className={cn(
-                            "text-[10px] font-black uppercase italic tracking-tighter",
-                            card.is_out ? "text-red-500" : (isNotOut ? "text-emerald-500" : "text-muted-foreground/40")
-                          )}>
-                            {card.is_out ? (card.dismissal_type?.replace("_", " ") || "Out") : (
-                              isNotOut ? "not out" : (isYetToBat ? "yet to bat" : "not out")
-                            )}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="py-3 text-right font-black">{card.runs}</td>
-                      <td className="py-3 text-right font-black text-muted-foreground">{card.balls_faced}</td>
-                      <td className="py-3 text-right font-black text-muted-foreground">{card.fours}</td>
-                      <td className="py-3 text-right font-black text-muted-foreground">{card.sixes}</td>
-                      <td className="py-3 text-right font-bold text-primary">
-                        {card.balls_faced > 0 ? ((card.runs / card.balls_faced) * 100).toFixed(1) : "0.0"}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {(() => {
+                  const battingList = [...(inn.batting || [])].sort((a, b) => {
+                    const aIsYetToBat = !a.is_out && a.balls_faced === 0 && a.user_id !== strikerId && a.user_id !== nonStrikerId;
+                    const bIsYetToBat = !b.is_out && b.balls_faced === 0 && b.user_id !== strikerId && b.user_id !== nonStrikerId;
+                    
+                    const aIsNotOut = !a.is_out && !aIsYetToBat;
+                    const bIsNotOut = !b.is_out && !bIsYetToBat;
+
+                    // Priority: 1. OUT, 2. NOT OUT, 3. YET TO BAT
+                    const getPriority = (isOut: boolean, isNotOut: boolean, isYetToBat: boolean) => {
+                      if (isOut) return 1;
+                      if (isNotOut) return 2;
+                      if (isYetToBat) return 3;
+                      return 4;
+                    };
+
+                    const aPriority = getPriority(a.is_out, aIsNotOut, aIsYetToBat);
+                    const bPriority = getPriority(b.is_out, bIsNotOut, bIsYetToBat);
+
+                    return aPriority - bPriority;
+                  });
+
+                  return battingList.map((card) => {
+                    const isYetToBat = !card.is_out && card.balls_faced === 0 && card.user_id !== strikerId && card.user_id !== nonStrikerId;
+                    const isNotOut = !card.is_out && !isYetToBat;
+                    
+                    return (
+                      <tr key={card.user_id} className="border-b border-primary/10 last:border-0">
+                        <td className="py-3">
+                          <div className="flex flex-col">
+                            <span className="font-bold text-foreground">{formatPlayerName(card.player_name)}</span>
+                            <span className={cn(
+                              "text-[10px] font-black uppercase italic tracking-tighter",
+                              card.is_out ? "text-red-500" : (isNotOut ? "text-emerald-500" : "text-muted-foreground/40")
+                            )}>
+                              {card.is_out ? (card.dismissal_type?.replace("_", " ") || "Out") : (
+                                isNotOut ? "not out" : "yet to bat"
+                              )}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 text-right font-black">{card.runs}</td>
+                        <td className="py-3 text-right font-black text-muted-foreground">{card.balls_faced}</td>
+                        <td className="py-3 text-right font-black text-muted-foreground">{card.fours}</td>
+                        <td className="py-3 text-right font-black text-muted-foreground">{card.sixes}</td>
+                        <td className="py-3 text-right font-bold text-primary">
+                          {card.balls_faced > 0 ? ((card.runs / card.balls_faced) * 100).toFixed(1) : "0.0"}
+                        </td>
+                      </tr>
+                    );
+                  });
+                })()}
               </tbody>
             </table>
           </div>

@@ -25,7 +25,7 @@ export function useMatch(id: string) {
       return data.match;
     },
     enabled: !!id,
-    refetchInterval: 3000, // Sync every 3 seconds for active scoring
+    refetchInterval: 5000, // Sync every 5 seconds
     refetchOnWindowFocus: true,
   });
 }
@@ -38,7 +38,7 @@ export function useScorecard(id: string) {
       return data.scorecard;
     },
     enabled: !!id,
-    refetchInterval: 10000, // Refresh every 10 seconds
+    refetchInterval: 5000, // Refresh every 5 seconds
   });
 }
 
@@ -93,7 +93,7 @@ export function useLiveState(matchId: string) {
       return data.match;
     },
     enabled: !!matchId,
-    refetchInterval: 5000,
+    refetchInterval: 5000, // Sync every 5 seconds
   });
 }
 
