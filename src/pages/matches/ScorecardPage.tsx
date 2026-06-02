@@ -1,9 +1,10 @@
 import { useParams, useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { useMatch, useScorecard } from "@/hooks/useMatches";
+import { useMatch, useScorecard, useBallEvents } from "@/hooks/useMatches";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Card, CardContent } from "@/components/ui/card";
 import { formatOvers, calculateRunRate, formatPlayerName, formatTeamName, cn } from "@/lib/utils";
-import { Trophy, ArrowLeft, Share2, FileText, Users } from "lucide-react";
+import { Trophy, ArrowLeft, Share2, FileText, Users, Activity } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -16,6 +17,10 @@ export default function ScorecardPage() {
   const creationStore = useMatchCreationStore();
   const { data: match, isLoading: matchLoading } = useMatch(id || "");
   const { data: scorecard, isLoading: scorecardLoading } = useScorecard(id || "");
+
+  // Fetch ball events for both innings
+  const { data: firstInningsBalls } = useBallEvents(scorecard?.first_innings?.innings_id || "");
+  const { data: secondInningsBalls } = useBallEvents(scorecard?.second_innings?.innings_id || "");
 
   const handleShareMatch = () => {
     const url = `${window.location.origin}/matches/${id}/live`;
@@ -51,7 +56,7 @@ export default function ScorecardPage() {
     );
   }
 
-  const renderInningsContent = (inn: InningsScorecard | undefined, inningsNo: number) => {
+  const renderInningsContent = (inn: InningsScorecard | undefined, inningsNo: number, ballEvents: any[] | undefined) => {
     if (!inn || (!inn.batting?.length && !inn.bowling?.length)) {
       return (
         <div className="text-center py-12 rounded-3xl border border-dashed bg-muted/20">
@@ -169,6 +174,100 @@ export default function ScorecardPage() {
             </table>
           </div>
         </div>
+
+        {/* Ball-by-Ball Commentary */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2 px-1">
+            <Activity className="h-3 w-3 text-primary" />
+            <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Ball-by-Ball</h4>
+          </div>
+          <Card className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+            <CardContent className="p-3">
+              <div className="space-y-0 max-h-[500px] overflow-y-auto scrollbar-hide">
+                 {(!ballEvents || ballEvents.length === 0) ? (
+                   <p className="text-xs text-muted-foreground italic text-center py-4">No ball events recorded for this innings.</p>
+                 ) : (
+                   (() => {
+                     const reversedEvents = [...ballEvents].reverse();
+                     return reversedEvents.map((ball: any, i: number) => {
+                       const isOverEnd = i < reversedEvents.length - 1 && ball.over_no !== reversedEvents[i+1].over_no;
+                       
+                       return (
+                         <div key={i}>
+                           <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 py-3 px-2 border-b border-border/30 hover:bg-muted/5 transition-colors">
+                              <div className="h-10 w-10 rounded-full border border-border bg-muted/10 flex items-center justify-center shrink-0">
+                                 <span className="text-[10px] font-black text-muted-foreground italic leading-none">{ball.over_no}.{ball.ball_in_over}</span>
+                              </div>
+
+                              <div className="flex-1 min-w-0">
+                                <div className="flex flex-col">
+                                  <div className="flex items-center justify-between mb-0.5">
+                                    <p className="text-[11px] font-black uppercase tracking-tight leading-none text-foreground truncate">
+                                      {formatPlayerName(ball.bowler_name)} to {formatPlayerName(ball.striker_name)}
+                                    </p>
+                                    <div className={cn(
+                                      "px-2 py-0.5 rounded-full border font-black text-[9px] uppercase tracking-widest shadow-sm",
+                                      ball.is_wicket ? "border-red-500 bg-red-500/10 text-red-600" :
+                                      ball.extra_type === "WIDE" || ball.extra_type === "NO_BALL" ? "border-yellow-600 bg-yellow-500/10 text-yellow-700" :
+                                      ball.runs_off_bat === 4 ? "border-primary bg-primary/10 text-primary" :
+                                      ball.runs_off_bat === 6 ? "border-purple-600 bg-purple-500/10 text-purple-600" :
+                                      ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE" ? "border-blue-400 bg-blue-400/10 text-blue-600" :
+                                      "border-muted bg-muted/20 text-muted-foreground"
+                                    )}>
+                                      {(() => {
+                                        if (ball.is_wicket) return "W";
+                                        if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `wd+${ball.extra_runs}` : "wd";
+                                        if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `nb+${ball.runs_off_bat}` : "nb";
+                                        if (ball.extra_type === "BYE") return ball.extra_runs > 0 ? `${ball.extra_runs}b` : "b";
+                                        if (ball.extra_type === "LEG_BYE") return ball.extra_runs > 0 ? `${ball.extra_runs}lb` : "lb";
+                                        return ball.runs_off_bat;
+                                      })()}
+                                    </div>
+                                  </div>
+                                  <div className="text-[10px] font-medium text-muted-foreground flex items-center gap-2">
+                                    {ball.is_wicket ? (
+                                      <div className="flex items-center gap-2">
+                                        <span className="text-red-500 font-black uppercase italic tracking-widest text-[9px]">
+                                          OUT! {ball.wicket_type?.replace("_", " ")} {ball.dismissed_by_fielder_name ? `(${formatPlayerName(ball.dismissed_by_fielder_name)})` : ""}
+                                        </span>
+                                        {ball.extra_type && (
+                                          <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
+                                            {ball.extra_type}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <div className="flex items-center gap-2">
+                                        <span className="font-bold text-foreground/80 uppercase">
+                                          {ball.runs_off_bat === 4 ? "FOUR RUNS" : ball.runs_off_bat === 6 ? "SIXER!" : ball.runs_off_bat === 0 && !ball.extra_type ? "no run" : `${ball.runs_off_bat} run${ball.runs_off_bat !== 1 ? 's' : ''}`}
+                                        </span>
+                                        {ball.extra_type && (
+                                          <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
+                                            {ball.extra_type}
+                                          </span>
+                                        )}
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                           </motion.div>
+                           {isOverEnd && (
+                             <div className="py-4 flex items-center gap-3">
+                                <div className="h-[1px] flex-1 bg-gradient-to-r from-transparent via-border to-transparent" />
+                                <span className="text-[8px] font-black uppercase tracking-[0.3em] text-muted-foreground bg-muted/30 px-3 py-1 rounded-full border border-border/50">End of Over {reversedEvents[i+1].over_no}</span>
+                                <div className="h-[1px] flex-1 bg-gradient-to-r from-border via-border to-transparent" />
+                             </div>
+                           )}
+                         </div>
+                       );
+                     });
+                   })()
+                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     );
   };
@@ -228,10 +327,10 @@ export default function ScorecardPage() {
           
           <div className="mt-8">
             <TabsContent value="first" className="mt-0 focus-visible:outline-none">
-              {renderInningsContent(scorecard.first_innings, 1)}
+              {renderInningsContent(scorecard.first_innings, 1, firstInningsBalls)}
             </TabsContent>
             <TabsContent value="second" className="mt-0 focus-visible:outline-none">
-              {renderInningsContent(scorecard.second_innings, 2)}
+              {renderInningsContent(scorecard.second_innings, 2, secondInningsBalls)}
             </TabsContent>
           </div>
         </Tabs>
