@@ -12,7 +12,7 @@ export function BottomNav() {
     ...(isAuthenticated ? [
       { to: "/my-matches", icon: Trophy, label: "Matches" },
       { to: "/matches/create", icon: PlusCircle, label: "New" },
-      { to: "/dashboard", icon: LayoutDashboard, label: "Stats" },
+      { to: "/dashboard", icon: LayoutDashboard, label: "Dashboard" },
       { to: "/profile", icon: User, label: "Profile" },
     ] : [
       { to: "/login", icon: User, label: "Login" }

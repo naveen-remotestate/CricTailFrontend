@@ -312,20 +312,6 @@ export default function DashboardPage() {
             </div>
           </section>
         )}
-
-        {finishedMatches.length > 0 && (
-          <section className="space-y-4">
-            <div className="flex items-center gap-2 px-1">
-              <Check className="h-4 w-4 text-muted-foreground" />
-              <h2 className="text-[11px] font-black uppercase tracking-[0.2em] text-muted-foreground">Finished Matches</h2>
-            </div>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {finishedMatches.slice(0, 3).map((match: any) => (
-                <LiveMatchCard key={match.match_id} match={match} />
-              ))}
-            </div>
-          </section>
-        )}
       </div>
     </div>
   );
