@@ -41,6 +41,7 @@ export function useLogin() {
       const data = await authService.login({ mobile_number, password });
       
       let full_name = "User";
+      let created_at = new Date().toISOString();
       try {
         // Fetch player details using the new token to get the full name
         const { apiClient } = await import("@/services/api/client");
@@ -52,12 +53,15 @@ export function useLogin() {
         const me = players.find((p: any) => p.mobile_number === mobile_number);
         if (me) {
           full_name = me.full_name;
+          if (me.created_at) {
+            created_at = me.created_at;
+          }
         }
       } catch (error) {
         console.error("Failed to fetch user profile", error);
       }
 
-      return { ...data, full_name };
+      return { ...data, full_name, created_at };
     },
     onSuccess: (data, variables) => {
       const decoded = decodeToken(data.token);
@@ -67,7 +71,7 @@ export function useLogin() {
         full_name: formatPlayerName(data.full_name),
         mobile_number: variables.mobile_number,
         is_active: true,
-        created_at: new Date().toISOString(),
+        created_at: data.created_at,
         updated_at: new Date().toISOString(),
       };
 

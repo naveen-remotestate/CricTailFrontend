@@ -1,6 +1,6 @@
 import { useAuthStore } from "@/store/authStore";
 import { useLogout } from "@/hooks/useAuth";
-import { usePlayerStats, useUpdateProfile } from "@/hooks/usePlayers";
+import { usePlayerStats, useUpdateProfile, useSearchPlayers } from "@/hooks/usePlayers";
 import { formatPlayerName, cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -24,9 +24,13 @@ import { toast } from "sonner";
 export default function ProfilePage() {
   const { user, login, token } = useAuthStore();
   const { data: playerStats } = usePlayerStats();
+  const { data: searchResults } = useSearchPlayers(user?.mobile_number || "");
   const updateProfile = useUpdateProfile();
   const logout = useLogout();
   const navigate = useNavigate();
+
+  const currentPlayer = searchResults?.find(p => p.mobile_number === user?.mobile_number);
+  const memberSinceDate = currentPlayer?.created_at || user?.created_at;
 
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({
@@ -197,7 +201,7 @@ export default function ProfilePage() {
               </div>
               <div>
                 <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground/60">Member Since</p>
-                <p className="text-xs font-bold">{new Date(user?.created_at || "").toLocaleDateString()}</p>
+                <p className="text-xs font-bold">{memberSinceDate ? new Date(memberSinceDate).toLocaleDateString() : "Loading..."}</p>
               </div>
             </div>
           </Card>

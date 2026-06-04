@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
-import { formatPlayerName } from "@/lib/utils";
+import { formatPlayerName, formatTeamName } from "@/lib/utils";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import {
@@ -85,20 +85,22 @@ export default function CreateMatchPage() {
       if (store.overs > 50) newErrors.overs = "Maximum 50 overs allowed";
     }
     if (store.step === 2) {
-      if (teamAPlayers.length === 0)
-        newErrors.playersA = `Add at least one player to ${store.teamAName || "A"}`;
-      if (teamBPlayers.length === 0)
-        newErrors.playersB = `Add at least one player to ${store.teamBName || "B"}`;
-      
+      if (teamAPlayers.length === 0) {
+        newErrors.playersA = `Add at least one player to ${formatTeamName(store.teamAName) || "A"}`;
+      }
+      if (teamBPlayers.length === 0) {
+        newErrors.playersB = `Add at least one player to ${formatTeamName(store.teamBName) || "B"}`;
+      }
       // Enforce equal player counts
-      if (teamAPlayers.length !== teamBPlayers.length) {
+      if (teamAPlayers.length !== teamBPlayers.length && teamAPlayers.length > 0 && teamBPlayers.length > 0) {
         newErrors.balance = `Both teams must have equal number of players (${teamAPlayers.length} vs ${teamBPlayers.length})`;
       }
-
-      if (!teamAPlayers.some((p) => p.isCaptain))
-        newErrors.captainA = `Select a captain for ${store.teamAName || "A"}`;
-      if (!teamBPlayers.some((p) => p.isCaptain))
-        newErrors.captainB = `Select a captain for ${store.teamBName || "B"}`;
+      if (teamAPlayers.length > 0 && !teamAPlayers.some(p => p.isCaptain)) {
+        newErrors.captainA = `Select a captain for ${formatTeamName(store.teamAName) || "A"}`;
+      }
+      if (teamBPlayers.length > 0 && !teamBPlayers.some(p => p.isCaptain)) {
+        newErrors.captainB = `Select a captain for ${formatTeamName(store.teamBName) || "B"}`;
+      }
     }
     if (store.step === 3) {
       if (!store.tossResult) newErrors.toss = "Complete the toss first";
@@ -200,8 +202,10 @@ export default function CreateMatchPage() {
       const winner: "A" | "B" = Math.random() > 0.5 ? "A" : "B";
       store.setTossResult(winner);
       toast.success(
-        `${winner === "A" ? store.teamAName : store.teamBName} won the toss!`,
+        `${winner === "A" ? formatTeamName(store.teamAName) : formatTeamName(store.teamBName)} won the toss!`,
+        { icon: "🏆" }
       );
+      store.setTossAnimating(false);
     }, 2500);
   };
 
@@ -494,10 +498,10 @@ export default function CreateMatchPage() {
                                       {teamAPlayers.some(p => p.user.user_id === player.user_id) ? (
                                         <div className="flex items-center gap-1">
                                           <Check className="h-3 w-3 shrink-0" />
-                                          <span className="truncate max-w-[60px]">{store.teamAName || "A"}</span>
+                                          <span className="truncate max-w-[60px]">{formatTeamName(store.teamAName) || "A"}</span>
                                         </div>
                                       ) : (
-                                        <span className="truncate max-w-[80px]">+ {store.teamAName || "A"}</span>
+                                        <span className="truncate max-w-[80px]">+ {formatTeamName(store.teamAName) || "A"}</span>
                                       )}
                                     </Button>
                                     <Button
@@ -514,10 +518,10 @@ export default function CreateMatchPage() {
                                       {teamBPlayers.some(p => p.user.user_id === player.user_id) ? (
                                         <div className="flex items-center gap-1">
                                           <Check className="h-3 w-3 shrink-0" />
-                                          <span className="truncate max-w-[60px]">{store.teamBName || "B"}</span>
+                                          <span className="truncate max-w-[60px]">{formatTeamName(store.teamBName) || "B"}</span>
                                         </div>
                                       ) : (
-                                        <span className="truncate max-w-[80px]">+ {store.teamBName || "B"}</span>
+                                        <span className="truncate max-w-[80px]">+ {formatTeamName(store.teamBName) || "B"}</span>
                                       )}
                                     </Button>
                                   </div>
@@ -590,7 +594,7 @@ export default function CreateMatchPage() {
                             className="flex-1 gap-2 bg-cricket-red hover:bg-cricket-redDark text-[10px] text-white"
                           >
                             <Plus className="h-4 w-4" />
-                            {store.teamAName || "A"}
+                            {formatTeamName(store.teamAName) || "A"}
                           </Button>
                           <Button
                             size="sm"
@@ -599,7 +603,7 @@ export default function CreateMatchPage() {
                             className="flex-1 gap-2 bg-cricket-blue hover:bg-cricket-blueDark text-[10px] text-white"
                           >
                             <Plus className="h-4 w-4" />
-                            {store.teamBName || "B"}
+                            {formatTeamName(store.teamBName) || "B"}
                           </Button>
                         </div>
                       </motion.div>
@@ -641,7 +645,7 @@ export default function CreateMatchPage() {
                     <div className="rounded-xl border bg-card p-4">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold text-cricket-red truncate mr-2">
-                          {store.teamAName || "A"}
+                          {formatTeamName(store.teamAName) || "A"}
                         </h3>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                           {teamAPlayers.length} players
@@ -725,7 +729,7 @@ export default function CreateMatchPage() {
                     <div className="rounded-xl border bg-card p-4">
                       <div className="flex items-center justify-between mb-3">
                         <h3 className="font-semibold text-cricket-blue truncate mr-2">
-                          {store.teamBName || "B"}
+                          {formatTeamName(store.teamBName) || "B"}
                         </h3>
                         <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                           {teamBPlayers.length} players
@@ -900,8 +904,8 @@ export default function CreateMatchPage() {
                           )}>
                             <Trophy className="h-5 w-5" />
                             {store.tossResult === "A"
-                              ? store.teamAName || "A"
-                              : store.teamBName || "B"}{" "}
+                              ? formatTeamName(store.teamAName) || "A"
+                              : formatTeamName(store.teamBName) || "B"}{" "}
                             won the toss!
                           </div>
                           <div className="mt-3">
@@ -944,8 +948,8 @@ export default function CreateMatchPage() {
                       >
                         <p className="text-center text-sm font-medium">
                           {store.tossResult === "A"
-                            ? store.teamAName
-                            : store.teamBName}
+                            ? formatTeamName(store.teamAName)
+                            : formatTeamName(store.teamBName)}
                           , choose:
                         </p>
                         <div className="grid grid-cols-2 gap-4 max-w-sm mx-auto">
@@ -1014,11 +1018,11 @@ export default function CreateMatchPage() {
                       <span className="font-semibold">
                         {store.tossDecision === "BAT"
                           ? store.tossWinner === "A"
-                            ? store.teamAName
-                            : store.teamBName
+                            ? formatTeamName(store.teamAName)
+                            : formatTeamName(store.teamBName)
                           : store.tossWinner === "A"
-                            ? store.teamBName
-                            : store.teamAName}
+                            ? formatTeamName(store.teamBName)
+                            : formatTeamName(store.teamAName)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between text-sm mt-1">
@@ -1028,11 +1032,11 @@ export default function CreateMatchPage() {
                       <span className="font-semibold">
                         {store.tossDecision === "BOWL"
                           ? store.tossWinner === "A"
-                            ? store.teamAName
-                            : store.teamBName
+                            ? formatTeamName(store.teamAName)
+                            : formatTeamName(store.teamBName)
                           : store.tossWinner === "A"
-                            ? store.teamBName
-                            : store.teamAName}
+                            ? formatTeamName(store.teamBName)
+                            : formatTeamName(store.teamAName)}
                       </span>
                     </div>
                   </div>

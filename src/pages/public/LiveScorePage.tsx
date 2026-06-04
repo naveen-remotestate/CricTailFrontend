@@ -246,23 +246,28 @@ export default function LiveScorePage() {
                               } else if (ball.extra_type === "NO_BALL") {
                                 displayText = ball.runs_off_bat > 0 ? `W+${ball.runs_off_bat}nb` : "W+nb";
                               }
-                              colorClass = "border-red-500 bg-red-500/10 text-red-600";
-                            } else if (ball.extra_type === "WIDE") {
-                              displayText = ball.extra_runs > 0 ? `${ball.extra_runs}wd` : "wd";
+                              colorClass = "border-red-500 bg-red-500/10 text-red-600 shadow-[0_0_8px_rgba(239,68,68,0.2)]";
+                            } else if (ball.extra_type === "WIDE" || ball.extra_type === "NO_BALL") {
+                              displayText = ball.extra_type === "WIDE" 
+                                ? (ball.extra_runs > 0 ? `${ball.extra_runs}wd` : "wd")
+                                : (ball.runs_off_bat > 0 ? `${ball.runs_off_bat}nb` : "nb");
                               colorClass = "border-yellow-600 bg-yellow-500/10 text-yellow-700";
-                            } else if (ball.extra_type === "NO_BALL") {
-                              displayText = ball.runs_off_bat > 0 ? `${ball.runs_off_bat}nb` : "nb";
-                              colorClass = "border-yellow-600 bg-yellow-500/10 text-yellow-700";
-                            } else if (ball.extra_type === "BYE") {
-                              displayText = ball.total_runs > 0 ? `${ball.total_runs}b` : "b";
-                              colorClass = "border-blue-400 bg-blue-400/10 text-blue-600";
-                            } else if (ball.extra_type === "LEG_BYE") {
-                              displayText = ball.total_runs > 0 ? `${ball.total_runs}lb` : "lb";
+                            } else if (ball.extra_type === "BYE" || ball.extra_type === "LEG_BYE") {
+                              displayText = ball.total_runs > 0 
+                                ? `${ball.total_runs}${ball.extra_type === "BYE" ? "b" : "lb"}` 
+                                : (ball.extra_type === "BYE" ? "b" : "lb");
                               colorClass = "border-blue-400 bg-blue-400/10 text-blue-600";
                             } else {
                               displayText = ball.runs_off_bat.toString();
-                              if (ball.runs_off_bat === 4) colorClass = "border-primary bg-primary/10 text-primary";
-                              else if (ball.runs_off_bat === 6) colorClass = "border-purple-600 bg-purple-500/10 text-purple-600";
+                              if (ball.runs_off_bat === 4) {
+                                colorClass = "border-blue-500 bg-blue-500/10 text-blue-600 font-black shadow-[0_0_8px_rgba(37,99,235,0.2)]";
+                              } else if (ball.runs_off_bat === 6) {
+                                colorClass = "border-purple-600 bg-purple-500/10 text-purple-600 font-black shadow-[0_0_8px_rgba(147,51,234,0.2)]";
+                              } else if (ball.runs_off_bat === 0) {
+                                colorClass = "border-muted-foreground/20 bg-muted/10 text-muted-foreground/40";
+                              } else {
+                                colorClass = "border-emerald-500/50 bg-emerald-500/5 text-emerald-600";
+                              }
                             }
 
                             return (
