@@ -7,6 +7,7 @@ import {
   useScorecard,
   useBallEvents,
   useStartNextInnings,
+  useUndoLastBall
 } from "@/hooks/useMatches";
 import { useQueryClient } from "@tanstack/react-query";
 import { useMatchCreationStore } from "@/store/matchCreationStore";
@@ -25,6 +26,7 @@ import {
   Share2,
   Activity,
   History,
+  Undo2
 } from "lucide-react";
 import type { User, LiveMatchState } from "@/types";
 import {
@@ -78,6 +80,7 @@ export default function LiveScoringPage() {
   const { data: apiBallEvents } = useBallEvents(match?.current_inning_id || "");
   const scoreBall = useScoreBall();
   const startNextInnings = useStartNextInnings();
+  const undoLastBall = useUndoLastBall();
 
   // Modals
   const [showWicketModal, setShowWicketModal] = useState(false);
@@ -466,6 +469,20 @@ export default function LiveScoringPage() {
     else if (setupStep === "bowler") setSetupStep("nonstriker");
     else if (setupStep === "nonstriker") setSetupStep("striker");
     else navigate(-1);
+  };
+
+  const handleUndo = async () => {
+    if (!id || sessionEvents.length === 0) return;
+    setIsProcessing(true);
+    try {
+      await undoLastBall.mutateAsync(id);
+      toast.success("Last ball undone!");
+      await syncData();
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to undo");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (matchLoading)
@@ -1142,8 +1159,22 @@ export default function LiveScoringPage() {
       </div>
 
       {!isMatchFinished && !isInningsBreak && isMatchStarted && (
-        <div className="flex-none z-40 border-t bg-background/95 backdrop-blur-lg pb-8 shadow-2xl">
-          <div className="mx-auto max-w-3xl px-4 py-4">
+        <div className="flex-none z-40 border-t bg-background/95 backdrop-blur-lg shadow-2xl relative">
+          
+          {/* Undo Button placed on top right of the scoring section */}
+          <div className="absolute -top-12 right-4 z-50">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleUndo}
+              disabled={isProcessing || sessionEvents.length === 0}
+              className="rounded-full shadow-lg border border-border gap-2 font-black uppercase tracking-widest text-[10px]"
+            >
+              <Undo2 className="h-3.5 w-3.5" /> Undo
+            </Button>
+          </div>
+
+          <div className="mx-auto max-w-3xl px-4 py-4 pb-8">
             <div className="grid grid-cols-4 gap-2">
               {[
                 { l: "0", s: "Dot", v: "dot", r: 0 },

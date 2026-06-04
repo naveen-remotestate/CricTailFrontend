@@ -109,6 +109,23 @@ export function useScoreBall() {
   });
 }
 
+export function useUndoLastBall() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (matchId: string) => {
+      const response = await matchService.undoLastBall(matchId);
+      return response;
+    },
+    onSuccess: (_, matchId) => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["scorecard", matchId] });
+      // We don't have the exact inningsID here easily, but we can invalidate all ball-events 
+      // or rely on the components to refetch based on the updated match state.
+      queryClient.invalidateQueries({ queryKey: ["ball-events"] });
+    },
+  });
+}
+
 export function useFinishInnings() {
   const queryClient = useQueryClient();
   return useMutation({

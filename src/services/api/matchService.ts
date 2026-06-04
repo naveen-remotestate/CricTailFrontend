@@ -80,4 +80,9 @@ export const matchService = {
     const response = await apiClient.get<{ ball_events: any[] }>(`/innings/${inningsID}/ball-events`);
     return response.data;
   },
+
+  undoLastBall: async (matchID: string) => {
+    const response = await apiClient.post<{ message: string }>(`/matches/${matchID}/undo`);
+    return response.data;
+  },
 };
