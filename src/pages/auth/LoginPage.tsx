@@ -23,6 +23,8 @@ export default function LoginPage() {
     const newErrors: Record<string, string> = {};
     if (!formData.mobile_number)
       newErrors.mobile_number = "Mobile number is required";
+    else if (formData.mobile_number.startsWith("0"))
+      newErrors.mobile_number = "Mobile number cannot start with 0";
     else if (!/^\d{10}$/.test(formData.mobile_number))
       newErrors.mobile_number = "Enter valid 10-digit mobile number";
     if (!formData.password) newErrors.password = "Password is required";

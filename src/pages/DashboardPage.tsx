@@ -251,7 +251,7 @@ export default function DashboardPage() {
                     <p className="text-[8px] font-bold uppercase text-muted-foreground">No Balls (NB)</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
-                    <p className="text-xs font-black text-blue-600">{stats?.HighestWicketTaken || 0}</p>
+                    <p className="text-xs font-black text-blue-600">{stats?.highest_wicket_taken || 0}</p>
                     <p className="text-[8px] font-bold uppercase text-muted-foreground">Best Figures</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
@@ -271,29 +271,7 @@ export default function DashboardPage() {
         </Card>
       </section>
 
-      {/* --- FIELDING HUB --- */}
-      <section className="space-y-4">
-        <div className="flex items-center gap-2 px-1">
-           <Hand className="h-4 w-4 text-orange-500" />
-           <h2 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground">Fielding HUB</h2>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-3">
-           {[
-             { label: "Catches", value: stats?.catches || 0, icon: Hand, color: "text-orange-500" },
-             { label: "Run Outs", value: stats?.run_outs || 0, icon: Activity, color: "text-orange-600" },
-             { label: "Stumpings", value: stats?.stumping || 0, icon: Medal, color: "text-orange-400" },
-           ].map((item, i) => (
-             <Card key={i} className="rounded-[2rem] border border-border bg-card shadow-sm">
-                <CardContent className="p-4 flex flex-col items-center text-center gap-1">
-                   <item.icon className={cn("h-4 w-4 opacity-40", item.color)} />
-                   <p className="text-xl font-black leading-none">{item.value}</p>
-                   <p className="text-[8px] font-black uppercase tracking-widest text-muted-foreground">{item.label}</p>
-                </CardContent>
-             </Card>
-           ))}
-        </div>
-      </section>
+
 
       <div className="h-[1px] bg-border/50" />
 

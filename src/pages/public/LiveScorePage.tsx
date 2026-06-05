@@ -332,7 +332,12 @@ export default function LiveScorePage() {
                                           "border-muted bg-muted/20 text-muted-foreground"
                                         )}>
                                           {(() => {
-                                            if (ball.is_wicket) return "W";
+                                            if (ball.is_wicket) {
+                                              if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `W+${ball.extra_runs}wd` : "W+wd";
+                                              if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `W+${ball.runs_off_bat}nb` : "W+nb";
+                                              if (ball.runs_off_bat > 0) return `W+${ball.runs_off_bat}`;
+                                              return "W";
+                                            }
                                             if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `${ball.extra_runs}wd` : "wd";
                                             if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `${ball.runs_off_bat}nb` : "nb";
                                             if (ball.extra_type === "BYE") return ball.extra_runs > 0 ? `${ball.extra_runs}b` : "b";
@@ -350,6 +355,11 @@ export default function LiveScorePage() {
                                             {ball.extra_type && (
                                               <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
                                                 {ball.extra_type}
+                                              </span>
+                                            )}
+                                            {(ball.runs_off_bat > 0 || (ball.extra_type === "WIDE" && ball.extra_runs > 0)) && (
+                                              <span className="font-bold text-foreground/80 uppercase text-[9px]">
+                                                + {ball.extra_type === "WIDE" ? ball.extra_runs : ball.runs_off_bat} RUN{((ball.extra_type === "WIDE" ? ball.extra_runs : ball.runs_off_bat) > 1) ? "S" : ""}
                                               </span>
                                             )}
                                           </div>

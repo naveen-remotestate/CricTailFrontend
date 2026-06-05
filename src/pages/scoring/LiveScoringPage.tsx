@@ -1047,7 +1047,7 @@ export default function LiveScoringPage() {
                             >
                               <div className="h-10 w-10 rounded-full border border-border bg-muted/10 flex items-center justify-center shrink-0">
                                 <span className="text-[10px] font-black text-muted-foreground italic leading-none">
-                                  {ball.over_no}.{ball.ball_in_over}
+                                  {ball.over_no - 1}.{ball.ball_in_over}
                                 </span>
                               </div>
                               <div className="flex-1 min-w-0">
@@ -1077,7 +1077,12 @@ export default function LiveScoringPage() {
                                       )}
                                     >
                                       {(() => {
-                                        if (ball.is_wicket) return "W";
+                                        if (ball.is_wicket) {
+                                          if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `W+${ball.extra_runs}wd` : "W+wd";
+                                          if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `W+${ball.runs_off_bat}nb` : "W+nb";
+                                          if (ball.runs_off_bat > 0) return `W+${ball.runs_off_bat}`;
+                                          return "W";
+                                        }
                                         if (ball.extra_type === "WIDE")
                                           return ball.extra_runs > 0
                                             ? `wd+${ball.extra_runs}`
@@ -1111,6 +1116,11 @@ export default function LiveScoringPage() {
                                         {ball.extra_type && (
                                           <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
                                             {ball.extra_type}
+                                          </span>
+                                        )}
+                                        {(ball.runs_off_bat > 0 || (ball.extra_type === "WIDE" && ball.extra_runs > 0)) && (
+                                          <span className="font-bold text-foreground/80 uppercase text-[9px]">
+                                            + {ball.extra_type === "WIDE" ? ball.extra_runs : ball.runs_off_bat} RUN{((ball.extra_type === "WIDE" ? ball.extra_runs : ball.runs_off_bat) > 1) ? "S" : ""}
                                           </span>
                                         )}
                                       </div>
@@ -1275,7 +1285,17 @@ export default function LiveScoringPage() {
                   "RUN_OUT",
                   "STUMPED",
                   "HIT_WICKET",
-                ].map((t) => (
+                ]
+                  .filter((t) => {
+                    if (pendingBall?.extraType === "WIDE") {
+                      return ["STUMPED", "RUN_OUT", "HIT_WICKET"].includes(t);
+                    }
+                    if (pendingBall?.extraType === "NO_BALL") {
+                      return ["RUN_OUT"].includes(t);
+                    }
+                    return true;
+                  })
+                  .map((t) => (
                   <Button
                     key={t}
                     variant="outline"
@@ -1559,7 +1579,12 @@ export default function LiveScoringPage() {
                 Select runs taken by batsmen
               </p>
               <div className="grid grid-cols-3 gap-3">
-                {[0, 1, 2, 3, 4, 6].map((r) => (
+                {[0, 1, 2, 3, 4, 6]
+                  .filter((r) => {
+                    if (pendingExtraType === "WIDE" && r === 6) return false;
+                    return true;
+                  })
+                  .map((r) => (
                   <div key={r} className="space-y-2">
                     <Button
                       variant="outline"

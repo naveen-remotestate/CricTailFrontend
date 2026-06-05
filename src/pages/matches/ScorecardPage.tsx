@@ -219,7 +219,7 @@ export default function ScorecardPage() {
                          <div key={i}>
                            <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 py-3 px-2 border-b border-border/30 hover:bg-muted/5 transition-colors">
                               <div className="h-10 w-10 rounded-full border border-border bg-muted/10 flex items-center justify-center shrink-0">
-                                 <span className="text-[10px] font-black text-muted-foreground italic leading-none">{ball.over_no}.{ball.ball_in_over}</span>
+                                 <span className="text-[10px] font-black text-muted-foreground italic leading-none">{ball.over_no - 1}.{ball.ball_in_over}</span>
                               </div>
 
                               <div className="flex-1 min-w-0">
@@ -238,7 +238,12 @@ export default function ScorecardPage() {
                                       "border-muted bg-muted/20 text-muted-foreground"
                                     )}>
                                       {(() => {
-                                        if (ball.is_wicket) return "W";
+                                        if (ball.is_wicket) {
+                                          if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `W+${ball.extra_runs}wd` : "W+wd";
+                                          if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `W+${ball.runs_off_bat}nb` : "W+nb";
+                                          if (ball.runs_off_bat > 0) return `W+${ball.runs_off_bat}`;
+                                          return "W";
+                                        }
                                         if (ball.extra_type === "WIDE") return ball.extra_runs > 0 ? `wd+${ball.extra_runs}` : "wd";
                                         if (ball.extra_type === "NO_BALL") return ball.runs_off_bat > 0 ? `nb+${ball.runs_off_bat}` : "nb";
                                         if (ball.extra_type === "BYE") return ball.extra_runs > 0 ? `${ball.extra_runs}b` : "b";
@@ -256,6 +261,11 @@ export default function ScorecardPage() {
                                         {ball.extra_type && (
                                           <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
                                             {ball.extra_type}
+                                          </span>
+                                        )}
+                                        {(ball.runs_off_bat > 0 || (ball.extra_type === "WIDE" && ball.extra_runs > 0)) && (
+                                          <span className="font-bold text-foreground/80 uppercase text-[9px]">
+                                            + {ball.extra_type === "WIDE" ? ball.extra_runs : ball.runs_off_bat} RUN{((ball.extra_type === "WIDE" ? ball.extra_runs : ball.runs_off_bat) > 1) ? "S" : ""}
                                           </span>
                                         )}
                                       </div>
