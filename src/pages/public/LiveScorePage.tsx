@@ -313,7 +313,7 @@ export default function LiveScorePage() {
                              <div key={i}>
                                <motion.div initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} className="flex items-center gap-4 py-3 px-2 border-b border-border/30 hover:bg-muted/5 transition-colors">
                                   <div className="h-10 w-10 rounded-full border border-border bg-muted/10 flex items-center justify-center shrink-0">
-                                     <span className="text-[10px] font-black text-muted-foreground italic leading-none">{ball.over_no}.{ball.ball_in_over}</span>
+                                     <span className="text-[10px] font-black text-muted-foreground italic leading-none">{ball.over_no - 1}.{ball.ball_in_over}</span>
                                   </div>
 
                                   <div className="flex-1 min-w-0">
@@ -350,7 +350,7 @@ export default function LiveScorePage() {
                                         {ball.is_wicket ? (
                                           <div className="flex items-center gap-2">
                                             <span className="text-red-500 font-black uppercase italic tracking-widest text-[9px]">
-                                              OUT! {ball.wicket_type?.replace("_", " ")} {ball.dismissed_by_fielder_name ? `(${formatPlayerName(ball.dismissed_by_fielder_name)})` : ""}
+                                              OUT! {ball.dismissed_player_name ? `${formatPlayerName(ball.dismissed_player_name)} ` : ""}{ball.wicket_type?.replace("_", " ")} {ball.dismissed_by_fielder_name ? `(${formatPlayerName(ball.dismissed_by_fielder_name)})` : ""}
                                             </span>
                                             {ball.extra_type && (
                                               <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">

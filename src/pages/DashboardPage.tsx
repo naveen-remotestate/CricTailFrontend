@@ -167,24 +167,16 @@ export default function DashboardPage() {
                     <p className="text-[8px] font-bold uppercase text-muted-foreground">Balls Faced</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
-                    <div className="flex justify-between items-end">
-                       <div>
-                          <p className="text-xs font-black">{stats?.hundreds || 0}</p>
-                          <p className="text-[8px] font-bold uppercase text-muted-foreground">100s</p>
-                       </div>
-                       <div className="text-right">
-                          <p className="text-xs font-black">{stats?.fifties || 0}</p>
-                          <p className="text-[8px] font-bold uppercase text-muted-foreground">50s</p>
-                       </div>
-                    </div>
+                    <p className="text-xs font-black">{stats?.hundreds || 0}</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">100s</p>
+                 </div>
+                 <div className="bg-muted/30 rounded-2xl p-3">
+                    <p className="text-xs font-black">{stats?.fifties || 0}</p>
+                    <p className="text-[8px] font-bold uppercase text-muted-foreground">50s</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
                     <p className="text-xs font-black text-red-500">{stats?.ducks || 0}</p>
                     <p className="text-[8px] font-bold uppercase text-muted-foreground">Ducks</p>
-                 </div>
-                 <div className="bg-muted/30 rounded-2xl p-3">
-                    <p className="text-xs font-black text-red-600">{stats?.golden_ducks || 0}</p>
-                    <p className="text-[8px] font-bold uppercase text-muted-foreground">Golden Ducks</p>
                  </div>
                  <div className="bg-muted/30 rounded-2xl p-3">
                     <p className="text-xs font-black text-primary">{stats?.total_fours || 0}</p>

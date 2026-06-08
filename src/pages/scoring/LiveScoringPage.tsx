@@ -61,6 +61,7 @@ interface SessionBallEvent {
   striker_name?: string;
   bowler_name?: string;
   wicket_type?: string;
+  dismissed_player_name?: string;
   dismissed_by_fielder_name?: string;
 }
 
@@ -1108,6 +1109,7 @@ export default function LiveScoringPage() {
                                       <div className="flex items-center gap-2">
                                         <span className="text-red-500 font-black uppercase italic tracking-widest text-[9px]">
                                           OUT!{" "}
+                                          {ball.dismissed_player_name ? `${formatPlayerName(ball.dismissed_player_name)} ` : ""}
                                           {ball.wicket_type?.replace("_", " ")}{" "}
                                           {ball.dismissed_by_fielder_name
                                             ? `(${formatPlayerName(ball.dismissed_by_fielder_name)})`
@@ -1184,7 +1186,7 @@ export default function LiveScoringPage() {
             </Button>
           </div>
 
-          <div className="mx-auto max-w-3xl px-4 py-4 pb-8">
+          <div className="mx-auto max-w-3xl px-4 pt-4 pb-20">
             <div className="grid grid-cols-4 gap-2">
               {[
                 { l: "0", s: "Dot", v: "dot", r: 0 },
@@ -1290,7 +1292,7 @@ export default function LiveScoringPage() {
                     if (pendingBall?.extraType === "WIDE") {
                       return ["STUMPED", "RUN_OUT", "HIT_WICKET"].includes(t);
                     }
-                    if (pendingBall?.extraType === "NO_BALL") {
+                    if (["NO_BALL", "BYE", "LEG_BYE"].includes(pendingBall?.extraType || "")) {
                       return ["RUN_OUT"].includes(t);
                     }
                     return true;
@@ -1581,7 +1583,7 @@ export default function LiveScoringPage() {
               <div className="grid grid-cols-3 gap-3">
                 {[0, 1, 2, 3, 4, 6]
                   .filter((r) => {
-                    if (pendingExtraType === "WIDE" && r === 6) return false;
+                    if (["WIDE", "BYE", "LEG_BYE"].includes(pendingExtraType || "") && r === 6) return false;
                     return true;
                   })
                   .map((r) => (
@@ -1593,8 +1595,7 @@ export default function LiveScoringPage() {
                     >
                       {r}
                     </Button>
-                    {(pendingExtraType === "WIDE" ||
-                      pendingExtraType === "NO_BALL") && (
+                    {["WIDE", "NO_BALL", "BYE", "LEG_BYE"].includes(pendingExtraType || "") && !(pendingExtraType === "NO_BALL" && r === 6) && (
                       <Button
                         variant="ghost"
                         className="w-full h-8 rounded-xl text-[8px] font-black uppercase text-red-500 bg-red-500/5"

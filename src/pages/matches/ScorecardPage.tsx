@@ -256,7 +256,7 @@ export default function ScorecardPage() {
                                     {ball.is_wicket ? (
                                       <div className="flex items-center gap-2">
                                         <span className="text-red-500 font-black uppercase italic tracking-widest text-[9px]">
-                                          OUT! {ball.wicket_type?.replace("_", " ")} {ball.dismissed_by_fielder_name ? `(${formatPlayerName(ball.dismissed_by_fielder_name)})` : ""}
+                                          OUT! {ball.dismissed_player_name ? `${formatPlayerName(ball.dismissed_player_name)} ` : ""}{ball.wicket_type?.replace("_", " ")} {ball.dismissed_by_fielder_name ? `(${formatPlayerName(ball.dismissed_by_fielder_name)})` : ""}
                                         </span>
                                         {ball.extra_type && (
                                           <span className="px-1.5 py-0.5 rounded bg-yellow-500/10 text-yellow-600 font-black text-[8px] border border-yellow-500/20 uppercase">
