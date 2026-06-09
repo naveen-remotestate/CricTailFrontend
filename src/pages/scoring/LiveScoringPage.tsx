@@ -174,6 +174,27 @@ export default function LiveScoringPage() {
   const isInningsBreak = match?.current_innings_no === 1 && match?.is_completed;
   const isMatchFinished = !!match?.winner_team_id;
 
+  const [hasConfirmedEnd, setHasConfirmedEnd] = useState(() => {
+    return localStorage.getItem(`confirmed_end_${id}_${match?.current_innings_no}`) === "true";
+  });
+
+  useEffect(() => {
+    if (!isInningsBreak && !isMatchFinished) {
+      setHasConfirmedEnd(false);
+      localStorage.removeItem(`confirmed_end_${id}_${match?.current_innings_no}`);
+    } else {
+      const persisted = localStorage.getItem(`confirmed_end_${id}_${match?.current_innings_no}`);
+      if (persisted === "true") {
+        setHasConfirmedEnd(true);
+      }
+    }
+  }, [isInningsBreak, isMatchFinished, id, match?.current_innings_no]);
+
+  const confirmEnd = () => {
+    setHasConfirmedEnd(true);
+    localStorage.setItem(`confirmed_end_${id}_${match?.current_innings_no}`, "true");
+  };
+
   const getSquad = (teamType: "batting" | "bowling") => {
     const is2nd = isInningsBreak;
     if (creationStore.matchId === id) {
@@ -564,7 +585,41 @@ export default function LiveScoringPage() {
         />
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden scrollbar-hide py-4">
-        {isMatchFinished ? (
+        {(isMatchFinished || isInningsBreak) && !hasConfirmedEnd ? (
+          <div className="min-h-full flex items-center justify-center p-4">
+            <Card className="w-full max-w-sm rounded-[2.5rem] border shadow-xl bg-card p-8 text-center">
+              <div className="h-16 w-16 rounded-3xl bg-primary/10 flex items-center justify-center mx-auto mb-4">
+                <History className="h-8 w-8 text-primary" />
+              </div>
+              <h2 className="text-xl font-black uppercase tracking-tighter italic">
+                Innings Ended
+              </h2>
+              <p className="text-sm font-bold text-muted-foreground mt-2 mb-8">
+                This action will end the current innings.
+              </p>
+              <div className="space-y-3">
+                <Button
+                  size="lg"
+                  className="w-full rounded-2xl h-14 font-black uppercase shadow-lg shadow-primary/20"
+                  onClick={confirmEnd}
+                >
+                  Continue
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="w-full rounded-2xl h-14 font-black uppercase"
+                  onClick={async () => {
+                     await handleUndo();
+                  }}
+                  disabled={isProcessing}
+                >
+                  {isProcessing ? "Processing..." : "Undo Last Ball"}
+                </Button>
+              </div>
+            </Card>
+          </div>
+        ) : isMatchFinished ? (
           <div className="min-h-full flex items-center justify-center p-4">
             <Card className="w-full max-w-sm rounded-[2.5rem] border shadow-xl bg-card p-8 text-center">
               <div className="h-16 w-16 rounded-3xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
