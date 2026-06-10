@@ -12,12 +12,8 @@ import {
   Trophy, 
   Shield, 
   Sword,
-  Check,
-  Medal,
-  Hand,
   Hash,
-  Award,
-  Activity
+  Award
 } from "lucide-react";
 import { formatPlayerName, formatOvers, cn } from "@/lib/utils";
 
@@ -27,7 +23,6 @@ export default function DashboardPage() {
   const { data: stats, isLoading: statsLoading } = usePlayerStats();
 
   const liveMatches = myMatches?.filter((m: any) => !m.winner_team_id && m.start_time !== null) || [];
-  const finishedMatches = myMatches?.filter((m: any) => m.winner_team_id !== null) || [];
 
   const isLoading = matchesLoading || statsLoading;
 

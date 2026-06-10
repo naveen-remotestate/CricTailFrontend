@@ -13,7 +13,7 @@ import type { User } from "@/types";
 import { useAuthStore } from "@/store/authStore";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
-import { formatPlayerName, formatTeamName, cn } from "@/lib/utils";
+import { formatPlayerName, cn } from "@/lib/utils";
 import { Confetti } from "@/components/ui/Confetti";
 import { useEffect, useState, useRef } from "react";
 
@@ -97,9 +97,7 @@ export default function LiveScorePage() {
   const isHost = match.hosted_by === user?.user_id;
   const isMatchFinished = !!match.winner_team_id;
 
-  const isSecondInnings = match.current_innings_no === 2;
-  const target = isSecondInnings ? (match.previous_innings_score || 0) + 1 : undefined;
-  
+
   const activeOverNo = Math.floor((match?.legal_balls || 0) / 6);
   const ballsInCurrentOver = (apiBallEvents || [])
     .filter((b: any) => b.over_no === (activeOverNo + 1))

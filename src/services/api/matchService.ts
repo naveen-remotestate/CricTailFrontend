@@ -45,6 +45,11 @@ export interface StartSecondInningsRequest {
   bowler_id: string;
 }
 
+export interface RetiredHurtRequest {
+  retired_player_id: string;
+  next_batsman_id: string;
+}
+
 export const matchService = {
   getMatches: async () => {
     const response = await apiClient.get<{ matches: Match[] }>("/matches");
@@ -63,6 +68,11 @@ export const matchService = {
 
   addBallEvent: async (data: AddBallEventRequest) => {
     const response = await apiClient.post<{ message: string }>("/ball-event", data);
+    return response.data;
+  },
+
+  retiredHurt: async (matchID: string, data: RetiredHurtRequest) => {
+    const response = await apiClient.post<{ message: string }>(`/matches/${matchID}/retired-hurt`, data);
     return response.data;
   },
 

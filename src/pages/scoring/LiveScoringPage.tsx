@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   useMatch,
   useScoreBall,
+  useRetiredHurt,
   useScorecard,
   useBallEvents,
   useStartNextInnings,
@@ -32,7 +33,6 @@ import type { User, LiveMatchState } from "@/types";
 import {
   formatOvers,
   formatPlayerName,
-  formatTeamName,
   cn,
   calculateRunRate,
 } from "@/lib/utils";
@@ -80,6 +80,7 @@ export default function LiveScoringPage() {
   const { data: scorecard, refetch: refetchScorecard } = useScorecard(id || "");
   const { data: apiBallEvents } = useBallEvents(match?.current_inning_id || "");
   const scoreBall = useScoreBall();
+  const retiredHurtMutation = useRetiredHurt();
   const startNextInnings = useStartNextInnings();
   const undoLastBall = useUndoLastBall();
 
@@ -329,7 +330,7 @@ export default function LiveScoringPage() {
     const isOverEnding =
       (!result.extraType ||
         (result.extraType !== "WIDE" && result.extraType !== "NO_BALL")) &&
-      (match.legal_balls + 1) % 6 === 0;
+      ((match.legal_balls || 0) + 1) % 6 === 0;
 
     if (isOverEnding && !willEnd) {
       setShowNewBowlerModal(true);
@@ -395,38 +396,70 @@ export default function LiveScoringPage() {
     }
   };
 
+  const handleRetiredHurtSubmit = async (retiredId: string, nextId: string) => {
+    if (!match) return;
+    setIsProcessing(true);
+    try {
+      await retiredHurtMutation.mutateAsync({
+        matchId: id || "",
+        data: {
+          retired_player_id: retiredId,
+          next_batsman_id: nextId,
+        },
+      });
+      setShowRetiredHurtModal(false);
+      setShowNewBatsmanModal(false);
+      setPendingBall(null);
+      await syncData();
+      toast.success("Player retired hurt and replaced.");
+    } catch (error: any) {
+      toast.error(error.response?.data?.error || "Failed to retire player");
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   const handleRetiredHurt = (pId: string) => {
     if (!match) return;
     const rB: BallResult = {
       runs: 0,
-      isWicket: true,
       wicketType: "RETIRED_HURT",
       dismissedPlayerId: pId,
     };
     setShowRetiredHurtModal(false);
-    const willEnd =
-      checkInningsEnd(rB) ||
-      allBattingUsers.filter(
-        (u) =>
-          u.user_id !== match.striker_id &&
-          u.user_id !== match.non_striker_id &&
-          !outPlayerIds.includes(u.user_id),
-      ).length === 0;
-    if (willEnd) handleScore(rB, "");
-    else {
-      setPendingBall(rB);
-      setShowNewBatsmanModal(true);
+    const availablePlayers = allBattingUsers.filter(
+      (u) =>
+        u.user_id !== match.striker_id &&
+        u.user_id !== match.non_striker_id &&
+        !outPlayerIds.includes(u.user_id),
+    );
+
+    if (availablePlayers.length === 0) {
+      // If no one else can bat, this is effectively an innings end or they just have to keep playing
+      // In cricket, if only one player is left, they can't retire hurt and leave the other alone 
+      // unless the innings is declared closed.
+      toast.error("No other players available to bat!");
+      return;
     }
+
+    setPendingBall(rB);
+    setShowNewBatsmanModal(true);
   };
 
   const handleNextBatsmanSelection = (bId: string) => {
     if (!pendingBall || !match) return;
+
+    if (pendingBall.wicketType === "RETIRED_HURT") {
+      handleRetiredHurtSubmit(pendingBall.dismissedPlayerId || "", bId);
+      return;
+    }
+
     const willEnd = checkInningsEnd(pendingBall);
     const isOverEnding =
       (!pendingBall.extraType ||
         (pendingBall.extraType !== "WIDE" &&
           pendingBall.extraType !== "NO_BALL")) &&
-      (match.legal_balls + 1) % 6 === 0;
+      ((match.legal_balls || 0) + 1) % 6 === 0;
 
     if (isOverEnding && !willEnd) {
       setTempNextBatsmanId(bId);

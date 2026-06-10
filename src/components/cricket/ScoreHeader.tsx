@@ -138,7 +138,7 @@ export function ScoreHeader({ match, liveState, compact, firstInningsSummary }: 
                     <span className="text-white">{requiredRate || "0.00"}</span>
                   </div>
                 </>
-              ) : !!match.winner_team_id ? (
+              ) : match.winner_team_id ? (
                 <>
                   <div className="flex items-center gap-1.5">
                     <span className="text-primary">{formatTeamName(inn1TeamName)} RR:</span>

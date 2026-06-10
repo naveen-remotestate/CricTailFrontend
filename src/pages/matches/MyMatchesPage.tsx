@@ -1,10 +1,9 @@
-import { motion } from "framer-motion";
 import { useMatches } from "@/hooks/useMatches";
 import { useAuthStore } from "@/store/authStore";
 import { LiveMatchCard } from "@/components/cricket/LiveMatchCard";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { PlusCircle, Trophy, History, LayoutDashboard } from "lucide-react";
+import { PlusCircle, Trophy, History } from "lucide-react";
 import { Link } from "react-router-dom";
 
 export default function MyMatchesPage() {

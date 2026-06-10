@@ -109,6 +109,20 @@ export function useScoreBall() {
   });
 }
 
+export function useRetiredHurt() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ matchId, data }: { matchId: string; data: any }) => {
+      const response = await matchService.retiredHurt(matchId, data);
+      return response;
+    },
+    onSuccess: (_, { matchId }) => {
+      queryClient.invalidateQueries({ queryKey: ["match", matchId] });
+      queryClient.invalidateQueries({ queryKey: ["scorecard", matchId] });
+    },
+  });
+}
+
 export function useUndoLastBall() {
   const queryClient = useQueryClient();
   return useMutation({

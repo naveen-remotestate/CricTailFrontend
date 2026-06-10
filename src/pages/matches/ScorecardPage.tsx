@@ -4,17 +4,15 @@ import { useMatch, useScorecard, useBallEvents } from "@/hooks/useMatches";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatOvers, calculateRunRate, formatPlayerName, formatTeamName, cn } from "@/lib/utils";
-import { Trophy, ArrowLeft, Share2, FileText, Users, Activity } from "lucide-react";
+import { Trophy, ArrowLeft, Share2, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { InningsScorecard } from "@/types";
-import { useMatchCreationStore } from "@/store/matchCreationStore";
 
 export default function ScorecardPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const creationStore = useMatchCreationStore();
   const { data: match, isLoading: matchLoading } = useMatch(id || "");
   const { data: scorecard, isLoading: scorecardLoading } = useScorecard(id || "");
 
@@ -201,7 +199,6 @@ export default function ScorecardPage() {
         {/* Ball-by-Ball Commentary */}
         <div className="space-y-2">
           <div className="flex items-center gap-2 px-1">
-            <Activity className="h-3 w-3 text-primary" />
             <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/60">Ball-by-Ball</h4>
           </div>
           <Card className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
