@@ -129,6 +129,7 @@ export default function ScorecardPage() {
                   return battingList.map((card) => {
                     const isYetToBat = !card.is_out && card.balls_faced === 0 && card.user_id !== strikerId && card.user_id !== nonStrikerId;
                     const isNotOut = !card.is_out && !isYetToBat;
+                    const isRetiredHurt = card.dismissal_type === "RETIRED_HURT" && !card.is_out && card.user_id !== strikerId && card.user_id !== nonStrikerId;
                     
                     return (
                       <tr key={card.user_id} className="border-b border-primary/10 last:border-0">
@@ -137,10 +138,12 @@ export default function ScorecardPage() {
                             <span className="font-bold text-foreground">{formatPlayerName(card.player_name)}</span>
                             <span className={cn(
                               "text-[10px] font-black uppercase italic tracking-tighter",
-                              card.is_out ? "text-red-500" : (isNotOut ? "text-emerald-500" : "text-muted-foreground/40")
+                              card.is_out ? "text-red-500" : (isRetiredHurt ? "text-orange-500" : (isNotOut ? "text-emerald-500" : "text-muted-foreground/40"))
                             )}>
-                              {card.is_out ? (card.dismissal_type?.replace("_", " ") || "Out") : (
-                                isNotOut ? "not out" : "yet to bat"
+                              {isRetiredHurt ? "retired hurt" : (
+                                card.is_out ? (card.dismissal_type?.replace("_", " ").toLowerCase() || "out") : (
+                                  isNotOut ? "not out" : "yet to bat"
+                                )
                               )}
                             </span>
                           </div>

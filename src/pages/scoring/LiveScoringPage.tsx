@@ -563,7 +563,9 @@ export default function LiveScoringPage() {
     legal_balls: match.legal_balls || 0,
     updated_at: new Date().toISOString(),
   };
-  const activeOverNo = Math.floor((match?.legal_balls || 0) / 6);
+  const activeOverNo = (match?.is_completed || isInningsBreak) && (match?.legal_balls || 0) > 0 
+    ? Math.floor(((match?.legal_balls || 0) - 1) / 6) 
+    : Math.floor((match?.legal_balls || 0) / 6);
   const currentOverDisplayNo = activeOverNo + 1;
   const remainingBatsmen = allBattingUsers.filter(
     (u) =>

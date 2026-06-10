@@ -34,7 +34,6 @@ export default function LiveScorePage() {
   // Watch for big events (4, 6, Wicket)
   useEffect(() => {
     if (!apiBallEvents || apiBallEvents.length === 0) {
-      hasLoadedInitially.current = true;
       return;
     }
 
@@ -51,8 +50,6 @@ export default function LiveScorePage() {
     if (lastBall.ball_sequence !== lastProcessedBallSeq.current) {
       let eventType = null;
       
-      // Using flags as requested (assuming naming might be slightly different or as per types)
-      // Checking for both possible naming conventions just in case
       if (lastBall.is_wicket) eventType = "WICKET!";
       else if (lastBall.is_boundary_six || lastBall.is_six) eventType = "SIXER!";
       else if (lastBall.is_boundary_four || lastBall.is_four) eventType = "FOUR!";
@@ -96,9 +93,13 @@ export default function LiveScorePage() {
 
   const isHost = match.hosted_by === user?.user_id;
   const isMatchFinished = !!match.winner_team_id;
+  const isInningsBreak = match.current_innings_no === 1 && match.is_completed;
 
 
-  const activeOverNo = Math.floor((match?.legal_balls || 0) / 6);
+  const activeOverNo = (match.is_completed || isInningsBreak) && (match?.legal_balls || 0) > 0 
+    ? Math.floor(((match?.legal_balls || 0) - 1) / 6) 
+    : Math.floor((match?.legal_balls || 0) / 6);
+  
   const ballsInCurrentOver = (apiBallEvents || [])
     .filter((b: any) => b.over_no === (activeOverNo + 1))
     .sort((a: any, b: any) => a.ball_sequence - b.ball_sequence);
@@ -199,6 +200,22 @@ export default function LiveScorePage() {
                   </div>
                </Card>
             </div>
+          ) : isInningsBreak ? (
+             <div className="flex-1 flex items-center justify-center py-6">
+                <Card className="w-full max-w-sm rounded-[2rem] border border-border shadow-lg bg-card p-6 text-center mx-auto border-t-4 border-t-yellow-500">
+                   <div className="h-12 w-12 rounded-2xl bg-yellow-500/10 flex items-center justify-center mx-auto mb-4">
+                      <History className="h-6 w-6 text-yellow-600" />
+                   </div>
+                   <h2 className="text-lg font-black uppercase tracking-tighter italic text-foreground">Innings Break</h2>
+                   <p className="text-[11px] font-black text-muted-foreground mt-1 mb-4 uppercase tracking-widest">
+                     1st Innings Completed
+                   </p>
+                   <div className="bg-muted/30 rounded-xl p-4 mb-2">
+                     <p className="text-[10px] font-black text-muted-foreground uppercase tracking-widest mb-1">Target for {match.batting_team_id === match.team_a_id ? match.team_b_name : match.team_a_name}</p>
+                     <p className="text-3xl font-black italic tracking-tighter text-foreground">{(match.current_total_runs || 0) + 1} Runs</p>
+                   </div>
+                </Card>
+             </div>
           ) : (
             <>
               <BatsmanDisplay striker={striker} nonStriker={nonStriker} strikerRuns={match.striker_runs} strikerBalls={match.striker_balls} nonStrikerRuns={match.non_striker_runs} nonStrikerBalls={match.non_striker_balls} />
