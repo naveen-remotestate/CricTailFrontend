@@ -138,7 +138,7 @@ export function ScoreHeader({ match, liveState, compact, firstInningsSummary }: 
                     <span className="text-white">{requiredRate || "0.00"}</span>
                   </div>
                 </>
-              ) : match.winner_team_id ? (
+              ) : (match.winner_team_id || (match.is_completed && match.current_innings_no === 2)) ? (
                 <>
                   <div className="flex items-center gap-1.5">
                     <span className="text-primary">{formatTeamName(inn1TeamName)} RR:</span>
@@ -159,13 +159,17 @@ export function ScoreHeader({ match, liveState, compact, firstInningsSummary }: 
            </div>
 
            <div>
-              {(isSecondInnings && target && !match.winner_team_id) ? (
+              {(isSecondInnings && target && !match.winner_team_id && !match.is_completed) ? (
                  <div className="text-right flex items-center gap-1.5">
                     <span className="text-[8px] font-black text-yellow-500 uppercase">Target: {target}</span>
                     <span className="text-[9px] font-black text-primary uppercase italic">
                        Need {Math.max(target - liveState.total_runs, 0)} from {ballsRemaining}
                     </span>
                  </div>
+              ) : (match.is_completed && match.current_innings_no === 2) ? (
+                <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white italic">
+                  {match.winner_team_id ? "Match Finished" : "Match Tied"}
+                </span>
               ) : (
                  <span className="text-[8px] font-black uppercase tracking-[0.2em] text-white italic">Match In Progress</span>
               )}

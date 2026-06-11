@@ -22,7 +22,7 @@ export default function DashboardPage() {
   const { data: myMatches, isLoading: matchesLoading } = useMyMatches();
   const { data: stats, isLoading: statsLoading } = usePlayerStats();
 
-  const liveMatches = myMatches?.filter((m: any) => !m.winner_team_id && m.start_time !== null) || [];
+  const liveMatches = myMatches?.filter((m: any) => !m.winner_team_id && m.start_time !== null && !(m.current_innings_no === 2 && m.is_completed)) || [];
 
   const isLoading = matchesLoading || statsLoading;
 

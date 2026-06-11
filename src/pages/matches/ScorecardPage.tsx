@@ -340,11 +340,15 @@ export default function ScorecardPage() {
             <span>{match.start_time ? new Date(match.start_time).toLocaleDateString() : "Live"}</span>
           </div>
           
-          {match.winner_team_id && (
+          {(match.winner_team_id || (match.is_completed && match.current_innings_no === 2)) && (
             <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="mt-4 inline-flex items-center gap-3 bg-yellow-500/10 text-yellow-600 px-6 py-2 rounded-full border border-yellow-500/20 shadow-sm">
               <Trophy className="h-4 w-4 fill-current" />
               <span className="text-xs font-black uppercase italic tracking-widest">
-                {match.winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name} WON THE MATCH
+                {match.winner_team_id ? (
+                  `${match.winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name} WON THE MATCH`
+                ) : (
+                  "MATCH TIED"
+                )}
               </span>
             </motion.div>
           )}

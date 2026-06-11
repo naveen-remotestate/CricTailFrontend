@@ -16,7 +16,7 @@ export function LiveMatchCard({ match, featured = false }: LiveMatchCardProps) {
   const teamBInitials = match.team_b_name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase();
   
   // Align with Live/Finished logic
-  const isCompleted = !!match.winner_team_id;
+  const isCompleted = !!match.winner_team_id || (match.current_innings_no === 2 && match.is_completed);
   const isLive = !isCompleted;
   
   const battingTeamName = match.batting_team_id === match.team_a_id ? match.team_a_name : match.team_b_name;
@@ -125,7 +125,11 @@ export function LiveMatchCard({ match, featured = false }: LiveMatchCardProps) {
               ) : (
                 <div className="mt-6 pt-4 border-t border-white/5 flex items-center justify-center">
                   <p className="text-xs font-black text-yellow-500 uppercase tracking-widest text-center">
-                    {match.winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name} won
+                    {match.winner_team_id ? (
+                      `${match.winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name} won`
+                    ) : (
+                      "Match Tied"
+                    )}
                   </p>
                 </div>
               )}
@@ -206,7 +210,11 @@ export function LiveMatchCard({ match, featured = false }: LiveMatchCardProps) {
             ) : (
               <div className="mt-4 text-center">
                 <p className="text-[9px] font-black text-yellow-600 uppercase tracking-tighter bg-yellow-500/10 py-1.5 rounded-full border border-yellow-500/20">
-                  {match.winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name} won
+                  {match.winner_team_id ? (
+                    `${match.winner_team_id === match.team_a_id ? match.team_a_name : match.team_b_name} won`
+                  ) : (
+                    "Match Tied"
+                  )}
                 </p>
               </div>
             )}

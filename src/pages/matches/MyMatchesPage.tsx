@@ -13,8 +13,8 @@ export default function MyMatchesPage() {
   // Filter matches hosted by the logged-in user
   const myMatches = matches?.filter((match: any) => match.hosted_by === user?.user_id) || [];
   
-  const liveMatches = myMatches.filter((m: any) => !m.winner_team_id);
-  const finishedMatches = myMatches.filter((m: any) => m.winner_team_id);
+  const liveMatches = myMatches.filter((m: any) => !m.winner_team_id && !(m.current_innings_no === 2 && m.is_completed));
+  const finishedMatches = myMatches.filter((m: any) => m.winner_team_id || (m.current_innings_no === 2 && m.is_completed));
 
   if (isLoading) {
     return (

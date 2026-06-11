@@ -29,8 +29,8 @@ export default function HomePage() {
   const [showAllFinished, setShowAllFinished] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const liveMatches = matches?.filter((m: any) => !m.winner_team_id) || [];
-  const finishedMatches = matches?.filter((m: any) => m.winner_team_id) || [];
+  const liveMatches = matches?.filter((m: any) => !m.winner_team_id && !(m.current_innings_no === 2 && m.is_completed)) || [];
+  const finishedMatches = matches?.filter((m: any) => m.winner_team_id || (m.current_innings_no === 2 && m.is_completed)) || [];
 
   const handleCopyLink = (matchId: string) => {
     const url = `${window.location.origin}/matches/${matchId}/live`;

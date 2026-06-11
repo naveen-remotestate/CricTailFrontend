@@ -173,7 +173,7 @@ export default function LiveScoringPage() {
     ? !match.is_completed && !!match.current_inning_id
     : false;
   const isInningsBreak = match?.current_innings_no === 1 && match?.is_completed;
-  const isMatchFinished = !!match?.winner_team_id;
+  const isMatchFinished = !!match?.winner_team_id || (match?.current_innings_no === 2 && match?.is_completed);
 
   const [hasConfirmedEnd, setHasConfirmedEnd] = useState(() => {
     return localStorage.getItem(`confirmed_end_${id}_${match?.current_innings_no}`) === "true";
@@ -664,10 +664,16 @@ export default function LiveScoringPage() {
                 Match Finished
               </h2>
               <p className="text-sm font-black text-primary mt-2 mb-8 uppercase">
-                {match.winner_team_id === match.team_a_id
-                  ? match.team_a_name
-                  : match.team_b_name}{" "}
-                WON!
+                {match.winner_team_id ? (
+                  <>
+                    {match.winner_team_id === match.team_a_id
+                      ? match.team_a_name
+                      : match.team_b_name}{" "}
+                    WON!
+                  </>
+                ) : (
+                  "MATCH TIED"
+                )}
               </p>
               <div className="space-y-3">
                 <Button
@@ -1379,6 +1385,9 @@ export default function LiveScoringPage() {
                   "HIT_WICKET",
                 ]
                   .filter((t) => {
+                    if (isFreeHit) {
+                      return ["RUN_OUT"].includes(t);
+                    }
                     if (pendingBall?.extraType === "WIDE") {
                       return ["STUMPED", "RUN_OUT", "HIT_WICKET"].includes(t);
                     }
